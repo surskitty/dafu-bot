@@ -20,9 +20,9 @@ class Raider:
         self.character_name = name
         self.discord_id = discord_id
         self.noto = 0
-        self.raids = {}
         self.roles = {}
         self.add_roles(role_string)
+        self.preferred_role
         self.reserve = False
         self.duelist = False
         self.party_lead = False
@@ -31,7 +31,7 @@ class Raider:
     def __str__(self):
         return self.character_name
     
-    def add_roles(self, role_string):
+    def add_roles(self, role_string: str) -> bool:
         """Adds roles separated by commas, a la "tank,dps,caster". Everyone is a DPS.
         Caster and ranged are distinct roles in Delubrum Reginae."""
         role_string = role_string.lower()
@@ -40,18 +40,29 @@ class Raider:
             if x in ROLES:
                 self.roles.add(x)
             else:
-                print(x + " is not a valid role.")
-    
-    def remove_roles(self, roles):
+                return False
+        return True
+
+    def remove_roles(self, role_string: str) -> bool:
         """Removes roles separated by commas, a la "melee,caster"."""
         role_string = role_string.lower()
         role_list = role_string.split(",")
         for x in role_list:
-            if ROLES.count(x) > 0:
+            if x in ROLES:
                 self.roles.discard(x)
             else:
-                print(x + " is not a valid role.")
+                return False
+        return True
     
+    def set_preferred_role(self, role_string: str):
+        """Set preferred role.  Used as party lead or raid host."""
+        role_string = role_string.lower()
+        if role_string in ROLES:
+            self.preferred_role = role_string
+            return True
+        else:
+            return False
+
     def increase_noto(self):
         #TODO: this should increase noto in the database then copy it 
         self.noto = self.noto + 1
@@ -59,6 +70,15 @@ class Raider:
 
     def reset_noto(self):
         self.noto = 0
+    
+    def get_past_raids(self):
+        pass
+
+def get_raid_by_id(raid_id: int) -> Raid:
+    for raid in raids:
+        if raid.raid_id == raid_id:
+            return raid
+    return 0
 
 def get_raider_by_id(raider_id: int) -> Raider:
     """Checks database for the raider in question."""
@@ -72,39 +92,32 @@ def get_raiders_by_raid_id(raid_id: int) -> List[int]:
     participants = []
     
     # TODO learn postgres
-    for raider in raiders:
-        if raid_id in raider.raids
-            participants.append(raider.discord_id)
     return participants
 
 class Raid:
-    def __init__(self, raid_type: str, host_id: int, raid_time: int, host_role: str, min_parties: int) -> int:
-        """Initialises a raid event; returns the raid id, or 0 if failed."""
+    def __init__(self, raid_type: str, host_id: int, organiser_id: int, raid_time: int) -> bool:
+        """Initialises a raid event."""
         raid_type = raid_type.upper()
         if raid_type in RAID_TYPES:
             self.raid_type = raid_type
-            self.req_roles_per_party = REQ_ROLES_PER_PARTY[self.raid_type]
+            self.req_roles = REQ_ROLES_PER_PARTY[self.raid_type]
         else:
-            return 0
+            return False
+
+        self.host_id = host_id
+        self.organiser = organiser_id
         
-        self.raid_host = get_raider_by_id(host_id)
-        
-        if host_role in ROLES:
-            self.host_role = host_role
-        else:
-            return 0
-        
-        if min_parties < MAX_PARTIES[self.raid_type]:
-            self.min_parties = min_parties
-            if self.min_parties < 0:
-                self.min_parties = 0
-        else:
-            self.min_parties = MAX_PARTIES[self.raid_type]
-        
+        self.required_party_members = [host_id]
+
+        # this will be sequential in the DB though
         self.raid_id = int(time.time())
+        
+        return True
 
     def build_roster(self) -> Roster:
         """Builds the list of everyone signed up for the raid."""
+
+        raiders = get_raiders_by_raid_id(self.raid_id)
 
         participants = []
         reserves = []
@@ -113,11 +126,8 @@ class Raid:
         healers = []
         casters = []
         ranged = []
-        party_ids = []
-        party_count = 0
-        roles_str = ""
-        
-        raiders = get_raiders_by_raid_id(self.raid_id)
+        parties = []
+        active_players = []
 
         for raider in raiders:
             if raider.reserve:
@@ -127,8 +137,8 @@ class Raid:
         
         # Raid host needs to participate.
         # TODO: logic to designate certain people as mandatory and distribute them as desired?
-        if self.raid_host not in self.required_party_members:
-        self.required_party_members.append(raid.raid_host.discord_id)
+        if self.host_id not in self.required_party_members:
+            self.required_party_members.append(self.host_id)
         
         # Randomise order
         participants.shuffle()
@@ -155,7 +165,9 @@ class Raid:
         
         # Register the participant and remove them from organisational lists.
         def register_participant(self, raider_id: int):
-            party_members.append(raider_id)
+            active_players.append(raider_id)
+            if raider_id in required_party_members:
+                participants.remove(raider_id)
             if raider_id in participants:
                 participants.remove(raider_id)
             if raider_id in reserves:
@@ -171,88 +183,113 @@ class Raid:
                 if raider_id in ranged:
                     ranged.remove(raider_id)
         
-        while len(party_leads) > 0 and party_count < MAX_PARTIES[self.raid_type]:
-            # First party member is party lead.
-            party = [party_leads.pop()]
-            register_participant(party[0])
-            
-            # Party lead gets randomly assigned role.
-            party_lead = get_raider_by_id(party[0])
-            party_comp = random.choice(party_lead.roles)
-            party_comp = party_comp[0]
-            
-            # Check that we got the raid host in here. They have dibs on role.
-            if self.raid_host.discord_id not in participants:
-                party.append(self.raid_host.discord_id)
-                party_comp = party_comp + self.host_role[0]
-                register_participant(party[-1])
-            
-            while len(tanks) > 0 and party_comp.count("t") < self.req_roles_per_party.count("t"):
-                party.append(tanks.pop())
-                party_comp = party_comp + "t"
-                register_participant(party[-1])
-            
-            while len(healers) > 0 and party_comp.count("h") < self.req_roles_per_party.count("h"):
-                party.append(healers.pop())
-                party_comp = party_comp + "h"
-                register_participant(party[-1])
+        # Start building parties.  Party leads get dibs on role.
+        for i in range(MAX_PARTIES[self.raid_type]):
+            while len(party_leads) > 0:
+                temp = party_leads.pop()
+                parties[i] = Party(temp)
+                register_participant(temp)
                 
-            while len(casters) > 0 and party_comp.count("c") < self.req_roles_per_party.count("c"):
-                party.append(casters.pop())
-                party_comp = party_comp + "c"
-                register_participant(party[-1])
+        if self.host.discord_id not in active_players:
+            parties[0].add(self.host.discord_id)
+            register_participant(self.host.discord_id)
+
+# Fill tanks and healers first. Empty slots per party are fine; host can consolidate.            
+        for party in parties:
+            while len(tanks) > 0 and party.current_roles.count("t") < self.req_roles.count("t"):
+                temp = tanks.pop()
+                party.add(temp, "t")
+                register_participant(temp)
+            while len(healers) > 0 and party.current_roles.count("h") < self.req_roles.count("h"):
+                temp = healers.pop()
+                party.add(temp, "h")
+                register_participant(temp)
+
+# Now casters and ranged.
+        for party in parties:
+            while len(casters) > 0 and party.current_roles.count("c") < self.req_roles.count("c"):
+                temp = casters.pop()
+                party.add(temp, "c")
+                register_participant(temp)
+            while len(ranged) > 0 and party.current_roles.count("r") < self.req_roles.count("r"):
+                temp = ranged.pop()
+                party.add(temp, "r")
+                register_participant(temp)
+
+# Stop when it's full.
+
+        for party in parties:
+            party_has_room = True
+            while len(participants) > 0 and party_has_room:
+                temp = participants.pop())
+                party_has_room = party.add(temp, "d")
+                # Only remove them if they were added successfully.
+                if party_has_room:
+                    register_participant(temp)
+
+            party_has_room = True
+            while len(reserves) > 0 and party_has_room:
+                temp = reserves.pop())
+                party_has_room = party.add(temp, "d")
+                # Only remove them if they were added successfully.
+                if party_has_room:
+                    register_participant(temp)
         
-            while len(ranged) > 0 and party_comp.count("r") < self.req_roles_per_party.count("r"):
-                party.append(ranged.pop())
-                party_comp = party_comp + "r"
-                register_participant(party[-1])
-        
-            while len(participants) > 0 and len(party) < PARTY_SIZE:
-                party.append(participants.pop())
-                party_comp = party_comp + "d"
-                register_participant(party[-1])
-        
-            if len(party) < PARTY_SIZE and len(participants) == 0 and len(reserves) > 0:
-                while len(reserves) > 0 and len(party) < PARTY_SIZE:
-                    party.append(reserves.pop())
-                    party_comp = party_comp + "d"
-                    register_participant(party[-1])
-        
-            roles_str = roles_str + party_comp
-            party_count++
-            party.clear()
-            party_comp.clear()
-        
-        # Melees are irrelevant; they're a dps.
-        roles_str = roles_str.replace("m", "d")
-        
-        self.roster = Roster(self.raid_id, party_members, roles_str)
+        self.roster = Roster(self.raid_id, parties)
 
         return self.roster
 
-def get_raid_by_id(raid_id: int) -> Raid:
-    for raid in raids:
-        if raid.raid_id == raid_id:
-            return raid
-    return 0
+class Party:
+    def __init__(self, lead_id):
+        self.lead_id = lead_id
+        self.members = []
+        
+        add(self.lead_id)
+    
+    def add(self, member_id: int, role: str="") -> bool:
+        if len(self.members) < PARTY_SIZE):
+            if role == "":
+                temp = get_raider_by_id(member_id)
+                self.members.append(PartyMember(member_id, temp.preferred_role))
+                return True
+            elif role in ROLES:
+                self.members.append(PartyMember(member_id, role))
+                return True
+            else:
+                return False
+        else:
+            return False
+    
+    def __str__(self):
+        temp_string = "LEAD: "
+        for member in self.members:
+            temp_string = temp_string + member.__str__() + "\n"
+        return temp_string
+    
+    def current_roles(self) -> str:
+        role_string = ""
+        for member in members:
+            role_string = role_string + member.role[0]
+        return role_string
+
+class PartyMember:
+    def __init__(self, raider_id: int, role: str):
+        self.me = get_raider_by_id(raider_id)
+        self.role = role
+    
+    def __str__(self):
+        return self.me.character_name + " " + self.role[0] 
 
 class Roster:
-    def __init__(self, raid_id: int, member_ids: List[int], roles_str: str, duelist_id=0):
+    def __init__(self, raid_id: int, parties: List[int], duelist_id=0):
         self.raid = get_raid_by_id(raid_id)
-        self.member_ids = member_ids.copy()
+        self.parties = members.copy()
         self.roles_str = roles_str
         self.duelist = get_raider_by_id(duelist_id)
-        self.party_members = []
-        
-        for raider_id in member_ids:
-            self.party_members.append(get_raider_by_id(raider_id))
 
-    def print_roster(self)
-        for slot_id in range(len(self.party_members)):
-            if (slot_id % PARTY_SIZE) == 0:
-                print(self.roles_str[slot_id] + " - " + self.party_members[slot_id] + " <- PARTY LEAD\n")
-            else: 
-                print(self.roles_str[slot_id] + " - " + self.party_members[slot_id] +"\n")
+    def print_roster(self):
+        for party in parties:
+            print(party)
     
     def select_duelist(self) -> Raider:
         """Chooses a duelist for DRS. Cannot be the raid host."""
@@ -260,7 +297,7 @@ class Roster:
         
         if self.raid.raid_type == "DRS":
             for party_member in self.party_members:
-                if party_member.duelist and party_member != self.raid.raid_host:
+                if party_member.duelist and party_member != self.raid.host:
                     duelists.append(party_member)
            
            # We don't want party order to matter.
