@@ -3,6 +3,17 @@ from typing import List
 import random
 import operator
 
+import discord
+from discord.ext import commands
+from pytz import timezone
+
+intents = discord.Intents().default()
+intents.members = True
+bot = commands.Bot(command_prefix='$', intents=intents)
+
+def run(TOKEN):
+    bot.run(TOKEN)
+
 ROLES = {"tank", "healer", "melee", "caster", "ranged", "dps"}
 RAID_TYPES = {"BA", "DRN", "DRS"}
 PARTY_SIZE = 8
@@ -74,13 +85,13 @@ class Raider:
     def get_past_raids(self):
         pass
 
-def get_raid_by_id(raid_id: int) -> Raid:
+def get_raid_by_id(raid_id: int):
     for raid in raids:
         if raid.raid_id == raid_id:
             return raid
     return 0
 
-def get_raider_by_id(raider_id: int) -> Raider:
+def get_raider_by_id(raider_id: int):
     """Checks database for the raider in question."""
     for raider in raiders:
         if raider.discord_id == raider_id:
@@ -114,7 +125,7 @@ class Raid:
         
         return True
 
-    def build_roster(self) -> Roster:
+    def build_roster(self):
         """Builds the list of everyone signed up for the raid."""
 
         raiders = get_raiders_by_raid_id(self.raid_id)
@@ -145,7 +156,7 @@ class Raid:
         reserves.shuffle()
         
         if (len(participants) // PARTY_SIZE) < self.min_parties:
-        print("You have " + len(participants) + "participants, which cannot form enough parties.")
+            print("You have " + len(participants) + "participants, which cannot form enough parties.")
         
         # Now add each of the participants to applicable lists.
         for raider_id in participants:
@@ -221,7 +232,7 @@ class Raid:
         for party in parties:
             party_has_room = True
             while len(participants) > 0 and party_has_room:
-                temp = participants.pop())
+                temp = participants.pop()
                 party_has_room = party.add(temp, "d")
                 # Only remove them if they were added successfully.
                 if party_has_room:
@@ -229,7 +240,7 @@ class Raid:
 
             party_has_room = True
             while len(reserves) > 0 and party_has_room:
-                temp = reserves.pop())
+                temp = reserves.pop()
                 party_has_room = party.add(temp, "d")
                 # Only remove them if they were added successfully.
                 if party_has_room:
@@ -247,7 +258,7 @@ class Party:
         add(self.lead_id)
     
     def add(self, member_id: int, role: str="") -> bool:
-        if len(self.members) < PARTY_SIZE):
+        if len(self.members) < PARTY_SIZE:
             if role == "":
                 temp = get_raider_by_id(member_id)
                 self.members.append(PartyMember(member_id, temp.preferred_role))
@@ -290,6 +301,7 @@ class Roster:
     def print_roster(self):
         for party in parties:
             print(party)
+            print("------")
     
     def select_duelist(self) -> Raider:
         """Chooses a duelist for DRS. Cannot be the raid host."""
@@ -300,17 +312,17 @@ class Roster:
                 if party_member.duelist and party_member != self.raid.host:
                     duelists.append(party_member)
            
-           # We don't want party order to matter.
-           duelists.shuffle()
+            # We don't want party order to matter.
+            duelists.shuffle()
 
-           # Increasing noto will refresh from the database :)
-           for raider in duelists:
-               raider.increase_noto()
+            # Increasing noto will refresh from the database :)
+            for raider in duelists:
+                raider.increase_noto()
            
-           duelists.sort(key=operator.attrgetter('noto'))
+            duelists.sort(key=operator.attrgetter('noto'))
            
-           self.duelist = duelists[-1]
-           self.duelist.reset_noto()
+            self.duelist = duelists[-1]
+            self.duelist.reset_noto()
            
-           return self.duelist
+            return self.duelist
 
