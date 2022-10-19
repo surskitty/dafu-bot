@@ -1,7 +1,6 @@
 from typing import List
-import psycopg2
-from psycopg2 import Error
-
+import psycopg
+from psycopg import Error
 
 def create_connection():
     try:
@@ -21,7 +20,7 @@ def initialize_db_with_tables(conn):
             discord_id INTEGER NOT NULL UNIQUE,
             character_name TEXT NOT NULL UNIQUE,
             roles TEXT DEFAULT 'd',
-            preferred_role TEXT DEFAULT 'd',
+            preferred_role CHAR DEFAULT 'd',
             notoriety INTEGER DEFAULT 0,
             party_lead BOOLEAN DEFAULT FALSE,
             reserve BOOLEAN DEFAULT FALSE,
@@ -68,10 +67,59 @@ def initialize_db_with_tables(conn):
         if conn is not None:
             conn.close()
 
+def create_raider(conn, discord_id: int, character_name: str, roles: str, preferred_role='d')
+    try:
+        cur = conn.cursor()
+        preferred_role = preferred_role[0]
+        cur.execute(
+            "INSERT INTO raiders (discord_id, character_name, roles, preferred_role) VALUES (%s, %s, %s, %s)",
+            (discord_id, character_name, roles, preferred_role))
+    except (Exception, Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if cur is not None:
+            cur.close()
 
-def get_raiders_by_raid_id(raid_id: int) -> List[int]:
-    """Returns raider_id for each raider participating in the raid."""
-    participants = []
-    
-    # TODO learn postgres
-    return participants
+def get_raider_id_by_discord_id(conn, discord_id: int):
+    cur = conn.cursor()
+    cur.execute("SELECT raider_id FROM raids WHERE discord_id=%s", (discord_id,))
+    return cur.fetchone()[0]
+
+def get_raid_by_id(conn, raid_id: int):
+    """Find the raid given id"""
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM raids WHERE raid_id=%s", (raid_id,))
+    return cur.fetchall()
+
+def get_raider_by_id(conn, raider_id: int):
+    """Find the player given id"""
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM raiders WHERE raider_id=%s", (raider_id,))
+    return cur.fetchall()
+
+def get_raiders_by_raid_id(conn, raid_id: int):
+    """Find the participants of a raid given the id"""
+    raiders = []
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT raider_id FROM signups WHERE raider_id=%s", (raider_id,))
+        raider_ids = cur.fetchall()
+        raiders = []
+        for raider in raider_ids:
+            get_raider_by_id(conn, raider)
+            raiders.append(cur.fetchone())
+    except (Exception, Error) as error:
+        print("Error getting raiders by raid ID", error)
+    finally:
+        if cur is not None:
+            cur.close()
+    return raiders
+
+def get_upcoming_raids(conn):
+    """Finds the raids that have not happened yet."""
+    try:
+        cur = conn.cursor()
+        cur.execute("SELECT * from raids WHERE raid_time >= now();")
+    except (Exception, Error) as error:
+        print("Error getting upcoming raids.", error)
+    return cur.fetchall()
