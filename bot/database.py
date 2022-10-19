@@ -1,6 +1,6 @@
 from typing import List
-import psycopg
-from psycopg import Error
+import psycopg2
+from psycopg2 import Error
 
 def create_connection():
     try:
