@@ -2,6 +2,7 @@ import time
 from typing import List
 import random
 import operator
+import psycopg2
 
 import discord
 from discord.ext import commands
@@ -14,8 +15,10 @@ bot = commands.Bot(command_prefix='$', intents=intents)
 def run(TOKEN):
     bot.run(TOKEN)
 
-ROLES = {"tank", "healer", "melee", "caster", "ranged", "dps"}
-RAID_TYPES = {"BA", "DRN", "DRS"}
+from bot.database import *
+
+ROLES = {"t", "h", "m", "c", "r", "d"}
+RAID_TYPES = ["BA", "DRN", "DRS"]
 PARTY_SIZE = 8
 MAX_PARTIES = {"BA": 7, "DRN": 3, "DRS": 6}
 REQ_ROLES_PER_PARTY = {"BA": "thh", "DRN": "tcr", "DRS": "tthhcr"}
@@ -48,8 +51,8 @@ class Raider:
         role_string = role_string.lower()
         role_list = role_string.split(",")
         for x in role_list:
-            if x in ROLES:
-                self.roles.add(x)
+            if x[0] in ROLES:
+                self.roles.add(x[0])
             else:
                 return False
         return True
@@ -59,8 +62,8 @@ class Raider:
         role_string = role_string.lower()
         role_list = role_string.split(",")
         for x in role_list:
-            if x in ROLES:
-                self.roles.discard(x)
+            if x[0] in ROLES:
+                self.roles.discard(x[0])
             else:
                 return False
         return True
@@ -97,13 +100,6 @@ def get_raider_by_id(raider_id: int):
         if raider.discord_id == raider_id:
             return raider
     return 0
-
-def get_raiders_by_raid_id(raid_id: int) -> List[int]:
-    """Returns discord IDs of raiders participating in the raid."""
-    participants = []
-    
-    # TODO learn postgres
-    return participants
 
 class Raid:
     def __init__(self, raid_type: str, host_id: int, organiser_id: int, raid_time: int) -> bool:
@@ -325,4 +321,5 @@ class Roster:
             self.duelist.reset_noto()
            
             return self.duelist
+
 
