@@ -73,7 +73,7 @@ def initialize_db_with_tables(conn):
         if conn is not None:
             conn.close()
 
-def create_raider(conn, discord_id: int, character_name: str, roles: str, preferred_role='d')
+def create_raider(conn, discord_id: int, character_name: str, roles: str, preferred_role='d'):
     try:
         cur = conn.cursor()
         preferred_role = preferred_role[0]
@@ -137,9 +137,8 @@ def update_raider(conn, field, value, raider_id):
         conn.commit()
     else:
         print(f"{field} not in raiders columns")
-    finally:
-        if cur is not None:
-            cur.close()
+    if cur is not None:
+        cur.close()
 
 def update_raid(conn, field, value, raid_id):
     if field in RAIDERS_COLUMNS:
@@ -151,9 +150,8 @@ def update_raid(conn, field, value, raid_id):
         conn.commit()
     else:
         print(f"{field} not in raids columns")
-    finally:
-        if cur is not None:
-            cur.close()
+    if cur is not None:
+        cur.close()
 
 def get_upcoming_raids(conn):
     """Finds the raids that have not happened yet."""

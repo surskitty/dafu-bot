@@ -30,15 +30,15 @@ raiders = []
 class Raider:
     def __init__(self, raider_id, discord_id, character_name, roles, preferred_role, 
                  notoriety, party_lead, reserve, duelist):
-        self.id = (int) raider_id
+        self.id = int(raider_id)
         self.name = name
-        self.discord_id = (int) discord_id
-        self.noto = (int) notoriety
+        self.discord_id = int(discord_id)
+        self.noto = int(notoriety)
         self.roles = list(roles)
         self.preferred_role = preferred_role
-        self.party_lead = (boolean) party_lead
-        self.reserve = (boolean) reserve
-        self.duelist = (boolean) duelist
+        self.party_lead = boolean(party_lead)
+        self.reserve = boolean(reserve)
+        self.duelist = boolean(duelist)
     
     def __str__(self):
         return self.character_name
@@ -353,7 +353,8 @@ def make_raider_from_db(conn, raider_id: int, discord_id: int):
     """Given either the raider_id or the discord id, read from the database
        and parse as a Raider. One of the two ids should be zero."""
     if discord_id > 0:
-        raider_id = (int) get_raider_id_by_discord_id(conn, discord_id)
+        raider_id = get_raider_id_by_discord_id(conn, discord_id)
+        raider_id = int(raider_id)
     attributes = get_raider_by_id(conn, raider_id)
     raider = Raider(attributes[0], attributes[1], attributes[2], attributes[3],
         attributes[4], attributes[5], attributes[6], attributes[7], attributes[8])
