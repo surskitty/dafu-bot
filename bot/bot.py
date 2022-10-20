@@ -98,35 +98,33 @@ class Raider:
     def set_preferred_role(self, role_string: str):
         """Set preferred role.  Used as party lead or raid host."""
         role_string = role_string.lower()
-        if role_string in ROLES:
+        if role_string in ROLES_FULL:
             self.preferred_role = role_string
-            return True
-        else:
-            return False
+        elif role_string in ROLES:
+            self.preferred_role = role_string
+        conn = create_connection()
+        update_raider(conn, "preferred_role", self.preferred_role[0], self.id)
+        conn.commit()
+        conn.close()
 
     def increase_noto(self):
-        #TODO: this should increase noto in the database then copy it 
         self.noto = self.noto + 1
+        conn = create_connection()
+        update_raider(conn, "notoriety", self.noto, self.id)
+        conn.commit()
+        conn.close()
         return self.noto
 
     def reset_noto(self):
         self.noto = 0
+        conn = create_connection()
+        update_raider(conn, "notoriety", self.noto, self.id)
+        conn.commit()
+        conn.close()
+        print("Notoriety for " + self.name + " has been reset.")
     
     def get_past_raids(self):
         pass
-
-def get_raid_by_id(raid_id: int):
-    for raid in raids:
-        if raid.raid_id == raid_id:
-            return raid
-    return 0
-
-def get_raider_by_id(raider_id: int):
-    """Checks database for the raider in question."""
-    for raider in raiders:
-        if raider.discord_id == raider_id:
-            return raider
-    return 0
 
 class Raid:
     def __init__(self, raid_type: str, host_id: int, organiser_id: int, raid_time: int) -> bool:
@@ -151,7 +149,11 @@ class Raid:
     def build_roster(self):
         """Builds the list of everyone signed up for the raid."""
 
-        raiders = get_raiders_by_raid_id(self.raid_id)
+        raiders = []
+        raiders_raw = get_raiders_by_raid_id(self.raid_id)
+
+        for raider in raiders_raw:
+            raiders.append(make_raider_from_db(raider))
 
         participants = []
         reserves = []
@@ -251,7 +253,6 @@ class Raid:
                 register_participant(temp)
 
 # Stop when it's full.
-
         for party in parties:
             party_has_room = True
             while len(participants) > 0 and party_has_room:
@@ -261,7 +262,6 @@ class Raid:
                 if party_has_room:
                     register_participant(temp)
 
-            party_has_room = True
             while len(reserves) > 0 and party_has_room:
                 temp = reserves.pop()
                 party_has_room = party.add(temp, "d")
@@ -303,7 +303,7 @@ class Party:
     def current_roles(self) -> str:
         role_string = ""
         for member in members:
-            role_string = role_string + member.role[0]
+            role_string += member.role[0]
         return role_string
 
 class PartyMember:
@@ -354,14 +354,9 @@ def make_raider_from_db(conn, raider_id: int, discord_id: int):
        and parse as a Raider. One of the two ids should be zero."""
     if discord_id > 0:
         raider_id = (int) get_raider_id_by_discord_id(conn, discord_id)
-    raider_attributes = get_raider_by_id(conn, raider_id)
+    attributes = get_raider_by_id(conn, raider_id)
+    raider = Raider(attributes[0], attributes[1], attributes[2], attributes[3],
+        attributes[4], attributes[5], attributes[6], attributes[7], attributes[8])
+    return raider
 
-
-def make_character_from_db(conn, discord_id, name):
-    if discord_id and not name:
-        p = get_player_by_id(conn, discord_id)[0]
-    elif name and not discord_id:
-        p = get_player_by_name(conn, name)[0]
-    else:
-        p = get_player(conn, discord_id, name)[0]
 
