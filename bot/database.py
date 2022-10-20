@@ -2,6 +2,12 @@ from typing import List
 import psycopg2
 from psycopg2 import Error
 
+RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles", 
+                 "preferred_role", "notoriety", "party_lead", "reserve", "duelist"]
+
+RAIDS_COLUMNS   = ["raid_id", "raid_type", "host_id", "organiser_id", 
+                   "raid_time", "message_link", "state"]
+
 def create_connection():
     try:
         conn = psycopg2.connect(database=PGDATABASE, user=PGUSER, password=PGPASSWORD, host=PGHOST,port=PGPORT)
@@ -80,22 +86,28 @@ def create_raider(conn, discord_id: int, character_name: str, roles: str, prefer
         if cur is not None:
             cur.close()
 
-def get_raider_id_by_discord_id(conn, discord_id: int):
-    cur = conn.cursor()
-    cur.execute("SELECT raider_id FROM raids WHERE discord_id=%s", (discord_id,))
-    return cur.fetchone()[0]
-
 def get_raid_by_id(conn, raid_id: int):
     """Find the raid given id"""
     cur = conn.cursor()
     cur.execute("SELECT * FROM raids WHERE raid_id=%s", (raid_id,))
+    return cur.fetchone()
+
+def get_raids_by_host_id(conn, host_id: int):
+    """Find the raid given id"""
+    cur = conn.cursor()
+    cur.execute("SELECT * FROM raids WHERE host_id=%s", (host_id,))
     return cur.fetchall()
 
 def get_raider_by_id(conn, raider_id: int):
     """Find the player given id"""
     cur = conn.cursor()
     cur.execute("SELECT * FROM raiders WHERE raider_id=%s", (raider_id,))
-    return cur.fetchall()
+    return cur.fetchone()
+
+def get_raider_id_by_discord_id(conn, discord_id: int):
+    cur = conn.cursor()
+    cur.execute("SELECT raider_id FROM raids WHERE discord_id=%s", (discord_id,))
+    return cur.fetchone()[0]
 
 def get_raiders_by_raid_id(conn, raid_id: int):
     """Find the participants of a raid given the id"""
@@ -114,6 +126,34 @@ def get_raiders_by_raid_id(conn, raid_id: int):
         if cur is not None:
             cur.close()
     return raiders
+
+def update_raider(conn, field, value, raider_id):
+    if field in RAIDERS_COLUMNS:
+        sql = ''' UPDATE raiders
+                  SET %s = %s
+                  WHERE id = %s'''
+        cur = conn.cursor()
+        cur.execute(sql, (field, value, raider_id))
+        conn.commit()
+    else:
+        print(f"{field} not in raiders columns")
+    finally:
+        if cur is not None:
+            cur.close()
+
+def update_raid(conn, field, value, raid_id):
+    if field in RAIDERS_COLUMNS:
+        sql = ''' UPDATE raids
+                  SET %s = %s
+                  WHERE id = %s'''
+        cur = conn.cursor()
+        cur.execute(sql, (field, value, raid_id))
+        conn.commit()
+    else:
+        print(f"{field} not in raids columns")
+    finally:
+        if cur is not None:
+            cur.close()
 
 def get_upcoming_raids(conn):
     """Finds the raids that have not happened yet."""

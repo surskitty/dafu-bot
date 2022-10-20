@@ -18,6 +18,7 @@ def run(TOKEN):
 from bot.database import *
 
 ROLES = {"t", "h", "m", "c", "r", "d"}
+ROLES_FULL = {"t": "tank", "h": "healer", "m": "melee", "c": "caster", "r": "ranged", "d": "dps"}
 RAID_TYPES = ["BA", "DRN", "DRS"]
 PARTY_SIZE = 8
 MAX_PARTIES = {"BA": 7, "DRN": 3, "DRS": 6}
@@ -27,46 +28,72 @@ raids = []
 raiders = []
 
 class Raider:
-    def __init__(self, name: str, discord_id: int, role_string="dps"):
-        """A potential raid participant. noto is the number of times in a row
-        the person has wanted to duel but was not chosen. reserve reduces their
-        priority for being chosen in a party until they turn that off."""
-        self.character_name = name
-        self.discord_id = discord_id
-        self.noto = 0
-        self.roles = {}
-        self.add_roles(role_string)
-        self.preferred_role
-        self.reserve = False
-        self.duelist = False
-        self.party_lead = False
-        self.DRS_comfort = 0
+    def __init__(self, raider_id, discord_id, character_name, roles, preferred_role, 
+                 notoriety, party_lead, reserve, duelist):
+        self.id = (int) raider_id
+        self.name = name
+        self.discord_id = (int) discord_id
+        self.noto = (int) notoriety
+        self.roles = list(roles)
+        self.preferred_role = preferred_role
+        self.party_lead = (boolean) party_lead
+        self.reserve = (boolean) reserve
+        self.duelist = (boolean) duelist
     
     def __str__(self):
         return self.character_name
     
     def add_roles(self, role_string: str) -> bool:
-        """Adds roles separated by commas, a la "tank,dps,caster". Everyone is a DPS.
-        Caster and ranged are distinct roles in Delubrum Reginae."""
+        """Adds roles separated by commas, a la "tank,dps,caster". 
+           Registering yourself as DPS simply means you have no responsibilities;
+           it does not refer to red classes."""
         role_string = role_string.lower()
         role_list = role_string.split(",")
         for x in role_list:
-            if x[0] in ROLES:
+            if x in ROLES_FULL:
                 self.roles.add(x[0])
+            elif x in ROLES:
+                self.roles.add(x)
             else:
-                return False
-        return True
+                print(x + " is not a valid role.")
+        self.roles = set(self.roles)
+        self.roles = list(self.roles)
+        self.roles = self.roles.sort()
+        role_string = ''.join(map(str,list))
+
+        conn = create_connection()
+        update_raider(conn, "roles", role_string, self.id)
+        conn.commit()
+        conn.close()
+        self.display_roles()
+
+    def display_roles(self):
+        role_string = self.name + " is registered as:"
+        for x in role_list:
+             role_string += " " + ROLES_FULL[x]
+        print(role_string)
 
     def remove_roles(self, role_string: str) -> bool:
         """Removes roles separated by commas, a la "melee,caster"."""
         role_string = role_string.lower()
         role_list = role_string.split(",")
+        self.roles = set(self.roles)
         for x in role_list:
-            if x[0] in ROLES:
+            if x in ROLES_FULL:
                 self.roles.discard(x[0])
+            elif x in ROLES:
+                self.roles.discard(x)
             else:
-                return False
-        return True
+                print(x + " is not a valid role.")
+        self.roles = list(self.roles)
+        self.roles = self.roles.sort()
+        role_string = ''.join(map(str,list))
+
+        conn = create_connection()
+        update_raider(conn, "roles", role_string, self.id)
+        conn.commit()
+        conn.close()
+        self.display_roles()
     
     def set_preferred_role(self, role_string: str):
         """Set preferred role.  Used as party lead or raid host."""
@@ -322,4 +349,19 @@ class Roster:
            
             return self.duelist
 
+def make_raider_from_db(conn, raider_id: int, discord_id: int):
+    """Given either the raider_id or the discord id, read from the database
+       and parse as a Raider. One of the two ids should be zero."""
+    if discord_id > 0:
+        raider_id = (int) get_raider_id_by_discord_id(conn, discord_id)
+    raider_attributes = get_raider_by_id(conn, raider_id)
+
+
+def make_character_from_db(conn, discord_id, name):
+    if discord_id and not name:
+        p = get_player_by_id(conn, discord_id)[0]
+    elif name and not discord_id:
+        p = get_player_by_name(conn, name)[0]
+    else:
+        p = get_player(conn, discord_id, name)[0]
 
