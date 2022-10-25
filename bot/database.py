@@ -1,6 +1,13 @@
 from typing import List
 import psycopg2
 from psycopg2 import Error
+import os
+
+PGDATABASE = os.getenv('PGDATABASE')
+PGUSER = os.getenv('PGUSER')
+PGPASSWORD = os.getenv('PGPASSWORD')
+PGHOST = os.getenv('PGHOST')
+PGPORT = os.getenv('PGPORT')
 
 RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles", 
                  "preferred_role", "notoriety", "party_lead", "reserve", "duelist"]
@@ -15,10 +22,10 @@ def create_connection():
         print("Error while connecting to PostgreSQL", error)    
     return conn
 
-def initialize_db_with_tables(conn):
+def initialize_db_with_tables():
     """initialise database"""
     conn = create_connection()
-    create_tables(conn)
+    success = True
     commands = (
         """
         CREATE TABLE IF NOT EXISTS raiders (
@@ -38,6 +45,7 @@ def initialize_db_with_tables(conn):
             raid_id SERIAL PRIMARY KEY,
             raid_type TEXT NOT NULL,
             host_id INTEGER NOT NULL,
+            host_discord INTEGER NOT NULL,
             organiser_id INTEGER,
             raid_time TIMESTAMP NOT NULL,
             message_link TEXT NOT NULL UNIQUE,
@@ -68,10 +76,12 @@ def initialize_db_with_tables(conn):
         cur.close()
         conn.commit()
     except (Exception, Error) as error:
+        success = False
         print("Error while connecting to PostgreSQL", error)
     finally:
         if conn is not None:
             conn.close()
+    return success
 
 def create_raider(conn, discord_id: int, character_name: str, roles: str, preferred_role='d'):
     try:

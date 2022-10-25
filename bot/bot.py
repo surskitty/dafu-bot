@@ -8,8 +8,7 @@ import discord
 from discord.ext import commands
 from pytz import timezone
 
-intents = discord.Intents().default()
-intents.members = True
+intents = discord.Intents().all()
 bot = commands.Bot(command_prefix='$', intents=intents)
 
 def run(TOKEN):
@@ -126,9 +125,33 @@ class Raider:
     def get_past_raids(self):
         pass
 
+"""def make_raid_embed(ev: Raid, guild, add_legend=False):
+    try:
+        raid_host = guild.get_member(ev.host_id)
+        raid_host_name = raid_host.name
+    except Exception:
+        raid_host_name = "INVALID_MEMBER"
+    if ev.organiser_id > 0:
+        try:
+            raid_organiser = guild.get_member(ev.organiser)
+            organiser_name = raid_organiser.name
+        except Exception:
+            organiser_name = "INVALID_MEMBER"
+    
+    embed = discord.Embed(title=f"**Run {ev.id} -- {ev.**",
+                          description=f"Organized by **{creator_name}**",
+                          color=discord.Color.dark_gold())
+    embed.add_field(name="**Name**", value=ev.name, inline=False)
+    embed.add_field(name="**Time**", value=f"{ev.get_discord_time_format()} -> [Countdown]"
+                                           f"({build_countdown_link(ev.timestamp)})", inline=False)
+    embed.set_footer(text=f"This event is {ev.state}")
+    return embed"""
+
 class Raid:
-    def __init__(self, raid_type: str, host_id: int, organiser_id: int, raid_time: int) -> bool:
-        """Initialises a raid event."""
+    def __init__(self, raid_id: int, raid_type: str, host_id: int, host_discord: int, organiser_id: int, raid_time: int) -> bool:
+        """Initialises a raid. host_discord and organiser_id both refer to discord IDs, not to DB IDs!"""
+        self.raid_id = int(raid_id)
+
         raid_type = raid_type.upper()
         if raid_type in RAID_TYPES:
             self.raid_type = raid_type
@@ -136,14 +159,19 @@ class Raid:
         else:
             return False
 
-        self.host_id = host_id
-        self.organiser = organiser_id
-        
-        self.required_party_members = [host_id]
+        self.host_discord = int(host_discord)
+        self.organiser = int(organiser_id)
 
-        # this will be sequential in the DB though
-        self.raid_id = int(time.time())
+        if host_id < 1:
+            conn = create_connection()
+            self.host_id = get_raider_id_by_discord_id(conn, self.host_discord)
+            conn.commit()
+            conn.close()
+        else:
+            self.host_id = host_id
         
+        self.required_party_members = [self.host_id]
+
         return True
 
     def build_roster(self):
@@ -361,3 +389,27 @@ def make_raider_from_db(conn, raider_id: int, discord_id: int):
     return raider
 
 
+@bot.event
+async def on_ready():
+    print(f'{bot.user.name} has connected to Discord!')
+
+@bot.command(name='hello', help='Answers with an appropriate hello message')
+async def hello(ctx):
+    options = [
+        f'Hello, {ctx.message.author.mention}!',
+        f"What's up, {ctx.message.author.mention}?",
+        f'Good day to you, {ctx.message.author.mention}!',
+        f'Lali-ho, {ctx.message.author.mention}!',
+    ]
+    response = random.choice(options)
+    await ctx.send(response)
+
+@bot.command(name='init', help="Initialises the database if it isn't already."
+                               "Can only be executed by admins.")
+@commands.has_permissions(administrator=True)
+async def init(ctx):
+    success = initialize_db_with_tables()
+    if success:
+        await ctx.send(f"Database initialised!")
+    else:
+        await ctx.send('Initialisation failed in some way.')
