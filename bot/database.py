@@ -2,12 +2,7 @@ from typing import List
 import psycopg2
 from psycopg2 import Error
 import os
-
-DATABASE = os.getenv('PGDATABASE')
-USER = os.getenv('PGUSER')
-PASSWORD = os.getenv('PGPASSWORD')
-HOST = os.getenv('PGHOST')
-PORT = os.getenv('PGPORT')
+from urllib.parse import urlparse 
 
 RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles", 
                  "preferred_role", "notoriety", "party_lead", "reserve", "duelist"]
@@ -18,6 +13,13 @@ RAIDS_COLUMNS   = ["raid_id", "raid_type", "host_id", "organiser_id",
 RAID_TYPES = {"BA": 0, "DRN": 1, "DRS: 2"}
 
 def create_connection():
+    result = urlparse(os.getenv('DATABASE_URL'))
+    USER = result.username
+    PASSWORD = result.password
+    DATABASE = result.path[1:]
+    HOST = result.hostname
+    POST = result.port
+
     try:
         conn = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST,port=PORT)
     except (Exception, Error) as error:
