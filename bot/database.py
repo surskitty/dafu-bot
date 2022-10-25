@@ -3,11 +3,11 @@ import psycopg2
 from psycopg2 import Error
 import os
 
-PGDATABASE = os.getenv('PGDATABASE')
-PGUSER = os.getenv('PGUSER')
-PGPASSWORD = os.getenv('PGPASSWORD')
-PGHOST = os.getenv('PGHOST')
-PGPORT = os.getenv('PGPORT')
+DATABASE = os.getenv('PGDATABASE')
+USER = os.getenv('PGUSER')
+PASSWORD = os.getenv('PGPASSWORD')
+HOST = os.getenv('PGHOST')
+PORT = os.getenv('PGPORT')
 
 RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles", 
                  "preferred_role", "notoriety", "party_lead", "reserve", "duelist"]
@@ -15,9 +15,11 @@ RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles",
 RAIDS_COLUMNS   = ["raid_id", "raid_type", "host_id", "organiser_id", 
                    "raid_time", "message_link", "state"]
 
+RAID_TYPES = {"BA": 0, "DRN": 1, "DRS: 2"}
+
 def create_connection():
     try:
-        conn = psycopg2.connect(database=PGDATABASE, user=PGUSER, password=PGPASSWORD, host=PGHOST,port=PGPORT)
+        conn = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST,port=PORT)
     except (Exception, Error) as error:
         print("Error while connecting to PostgreSQL", error)    
     return conn
@@ -34,7 +36,7 @@ def initialize_db_with_tables():
             character_name TEXT NOT NULL UNIQUE,
             roles TEXT DEFAULT 'd',
             preferred_role CHAR DEFAULT 'd',
-            notoriety INTEGER DEFAULT 0,
+            notoriety SMALLINT DEFAULT 0,
             party_lead BOOLEAN DEFAULT FALSE,
             reserve BOOLEAN DEFAULT FALSE,
             duelist BOOLEAN DEFAULT FALSE
@@ -43,13 +45,13 @@ def initialize_db_with_tables():
         """
         CREATE TABLE IF NOT EXISTS raids (
             raid_id SERIAL PRIMARY KEY,
-            raid_type TEXT NOT NULL,
+            raid_type SMALLINT NOT NULL,
             host_id INTEGER NOT NULL,
             host_discord INTEGER NOT NULL,
             organiser_id INTEGER,
             raid_time TIMESTAMP NOT NULL,
             message_link TEXT NOT NULL UNIQUE,
-            state BOOLEAN,
+            state SMALLINT NOT NULL,
             FOREIGN KEY (host_id)
                 REFERENCES raiders(raider_id)
                 ON UPDATE CASCADE ON DELETE CASCADE
@@ -58,8 +60,9 @@ def initialize_db_with_tables():
         """
         CREATE TABLE IF NOT EXISTS signups (
             raid_id INTEGER NOT NULL,
-            raider_id INTEGER INTEGER NOT NULL,
-            PRIMARY KEY (raid_id, grade_id)
+            raider_id INTEGER NOT NULL,
+            benched BOOLEAN DEFAULT FALSE
+            PRIMARY KEY (raid_id, raider_id)
             FOREIGN KEY (raid_id)
                 REFERENCES raids (raid_id)
                 ON UPDATE CASCADE ON DELETE CASCADE,
