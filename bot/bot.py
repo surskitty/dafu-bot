@@ -3,6 +3,7 @@ from typing import List
 import random
 import operator
 import psycopg2
+import re
 
 import discord
 from discord.ext import commands
@@ -47,7 +48,7 @@ def make_raider_embed(raider):
     embed.add_field(name="**Preferred role**", value=ROLES_FULL[raider.preferred_role], inline=False)
     embed.add_field(name="**Volunteer for Party Lead**", value=str(raider.party_lead), inline=False)
     embed.add_field(name="**Set to Reserve Only**", value=str(raider.reserve), inline=False)
-    embed.set_footer(text=f"Registered since {date}")
+    embed.set_footer(text=f"Orb Ponderer #{raider.id}")
     return embed
 
 @bot.command(name='init', help="Initialises the database if it isn't already."
@@ -70,33 +71,33 @@ async def register(ctx, character_name: str, roles: str, preferred_role='d'):
             await ctx.send(f"<@{discord_id}> is already registered!")
             return
         try:
-            character_name.sub(r'[^A-Za-z0-9 #]+', '', s) 
+            character_name = re.sub(r'[^A-Za-z0-9 #]+', '', character_name) 
             roles = roles.lower()
             role_list = roles.split(",")
             roles_temp = []
             for x in role_list:
-                if x in ROLES_FULL: roles_temp.add(x[0])
-                elif x in ROLES:    roles_temp.add(x)
+                if x in ROLES:        roles_temp.add(x)
+                elif x in ROLES_FULL: roles_temp.add(x[0])
             roles_temp = set(roles_temp)
             roles_temp = list(roles_temp)
             roles_temp.sort()
             roles = ""
             for x in roles_temp:
                 roles += x
-            if preferred_role in ROLES_FULL: preferred_role = preferred_role[0]
-            elif preferred_role in ROLES:    preferred_role = preferred_role
-            else:                            preferred_role = "d"
+            if preferred_role in ROLES:        preferred_role = preferred_role
+            elif preferred_role in ROLES_FULL: preferred_role = preferred_role[0]
+            else:                              preferred_role = "d"
         
             create_raider(conn, discord_id, character_name, roles, preferred_role)
+            conn.commit()
             raider = make_raider_from_db(conn, 0, discord_id)
             conn.close()
             embed = make_raider_embed(raider)
             await ctx.send(f"<@{raider.discord_id}>'s character:", embed=embed)
         except Exception as e:
             conn.close()
-            await ctx.send(f"Failed, with name: {character_name} roles: {roles} preferred_role: {preferred_role}")
-#            await ctx.send('Could not parse name and/or role list. '
-#                           'Format like this: `$register "Firstname Lastname" "tank,caster,healer" dps`')
+            await ctx.send('Could not parse name and/or role list. '
+                           'Format like this: `$register "Firstname Lastname" "tank,caster,healer" dps`')
             return
 
     else:

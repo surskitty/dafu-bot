@@ -27,14 +27,14 @@ class Raider:
     def __init__(self, raider_id, discord_id, character_name, roles, preferred_role, 
                  notoriety, party_lead, reserve, duelist):
         self.id = int(raider_id)
-        self.name = name
+        self.name = character_name
         self.discord_id = int(discord_id)
         self.noto = int(notoriety)
         self.roles = list(roles)
         self.preferred_role = preferred_role
-        self.party_lead = boolean(party_lead)
-        self.reserve = boolean(reserve)
-        self.duelist = boolean(duelist)
+        self.party_lead = bool(party_lead)
+        self.reserve = bool(reserve)
+        self.duelist = bool(duelist)
     
     def __str__(self):
         return self.character_name
@@ -377,7 +377,7 @@ def make_raider_from_db(conn, raider_id: int, discord_id: int):
        and parse as a Raider. One of the two ids should be zero."""
     if discord_id > 0:
         raider_id = get_raider_id_by_discord_id(conn, discord_id)
-        raider_id = int(raider_id)
+        raider_id = int(''.join(map(str, raider_id)))
     attributes = get_raider_by_id(conn, raider_id)
     raider = Raider(attributes[0], attributes[1], attributes[2], attributes[3],
         attributes[4], attributes[5], attributes[6], attributes[7], attributes[8])
@@ -403,7 +403,7 @@ def initialize_db_with_tables():
         """
         CREATE TABLE IF NOT EXISTS raiders (
             raider_id SERIAL PRIMARY KEY,
-            discord_id INTEGER NOT NULL UNIQUE,
+            discord_id BIGINT NOT NULL UNIQUE,
             character_name TEXT NOT NULL UNIQUE,
             roles TEXT DEFAULT 'd',
             preferred_role CHAR DEFAULT 'd',
@@ -418,8 +418,8 @@ def initialize_db_with_tables():
             raid_id SERIAL PRIMARY KEY,
             raid_type SMALLINT NOT NULL,
             host_id INTEGER NOT NULL,
-            host_discord INTEGER NOT NULL,
-            organiser_id INTEGER,
+            host_discord BIGINT NOT NULL,
+            organiser_id BIGINT,
             raid_time TIMESTAMP NOT NULL,
             message_link TEXT NOT NULL UNIQUE,
             state SMALLINT NOT NULL,
