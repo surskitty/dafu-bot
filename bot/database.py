@@ -490,8 +490,8 @@ def get_raider_by_id(conn, raider_id: int):
 def get_raider_id_by_discord_id(conn, discord_id: int):
     """Find the player given Discord id"""
     cur = conn.cursor()
-    cur.execute("SELECT raider_id FROM raids WHERE discord_id=%s", (discord_id,))
-    return cur.fetchone()[0]
+    cur.execute("SELECT raider_id FROM raiders WHERE discord_id=%s", (discord_id,))
+    return cur.fetchone()
 
 def get_raiders_by_raid_id(conn, raid_id: int):
     """Find the participants of a raid given the id"""

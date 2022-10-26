@@ -20,6 +20,16 @@ from bot.database import *
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
+@bot.command(name='healthcheck', help='Tests if the database connection is working')
+async def healthcheck(ctx):
+    conn = create_connection()
+    if conn is not None:
+        response = f'Seems good, {ctx.message.author.mention}!'
+    else:
+        response = f"Something isn't right."
+    await ctx.send(response)
+    conn.close()
+
 @bot.command(name='hello', help='Answers with an appropriate hello message')
 async def hello(ctx):
     options = [
@@ -55,9 +65,9 @@ async def register(ctx, character_name: str, roles: str, preferred_role='d'):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
-        db_chara = get_raider_id_by_discord_id(conn, disc_id)
+        db_chara = get_raider_id_by_discord_id(conn, discord_id)
         if db_chara:
-            await ctx.send(f"<@{disc_id}> is already registered!")
+            await ctx.send(f"<@{discord_id}> is already registered!")
             return
         try:
             character_name.sub(r'[^A-Za-z0-9 #]+', '', s) 
@@ -74,17 +84,19 @@ async def register(ctx, character_name: str, roles: str, preferred_role='d'):
             for x in roles_temp:
                 roles += x
             if preferred_role in ROLES_FULL: preferred_role = preferred_role[0]
-            elif role_string in ROLES:       preferred_role = preferred_role
+            elif preferred_role in ROLES:    preferred_role = preferred_role
             else:                            preferred_role = "d"
         
-            create_raider(conn, discord_id, character_name, roles, preferred_role):
+            create_raider(conn, discord_id, character_name, roles, preferred_role)
             raider = make_raider_from_db(conn, 0, discord_id)
+            conn.close()
             embed = make_raider_embed(raider)
-            await ctx.send(f"<@{chara.discord_id}>'s character:", embed=embed)
+            await ctx.send(f"<@{raider.discord_id}>'s character:", embed=embed)
         except Exception as e:
             conn.close()
-            await ctx.send('Could not parse name and/or role list. '
-                           'Format like this: `$register "Firstname Lastname" "tank,caster,healer" dps`')
+            await ctx.send(f"Failed, with name: {character_name} roles: {roles} preferred_role: {preferred_role}")
+#            await ctx.send('Could not parse name and/or role list. '
+#                           'Format like this: `$register "Firstname Lastname" "tank,caster,healer" dps`')
             return
 
     else:
