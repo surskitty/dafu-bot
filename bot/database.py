@@ -54,8 +54,10 @@ class Raider:
                 print(x + " is not a valid role.")
         self.roles = set(self.roles)
         self.roles = list(self.roles)
-        self.roles = self.roles.sort()
-        role_string = ''.join(map(str,list))
+        self.roles.sort()
+        role_string = ""
+        for x in self.roles:
+            role_string += x
 
         conn = create_connection()
         update_raider(conn, "roles", role_string, self.id)
