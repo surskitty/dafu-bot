@@ -71,7 +71,7 @@ async def register(ctx, character_name: str, roles: str, preferred_role='d'):
             await ctx.send(f"<@{discord_id}> is already registered!")
             return
         try:
-            character_name = re.sub(r'[^A-Za-z0-9 #]+', '', character_name) 
+            character_name = re.sub(r"[^A-Za-z0-9 #']+", '', character_name) 
             roles = roles.lower()
             role_list = roles.split(",")
             roles_temp = []
@@ -99,8 +99,40 @@ async def register(ctx, character_name: str, roles: str, preferred_role='d'):
             await ctx.send('Could not parse name and/or role list. '
                            'Format like this: `$register "Firstname Lastname" "tank,caster,healer" dps`')
             return
-
     else:
         await ctx.send('Could not connect to database. Need connection to create and save characters.')
+        return
+
+@bot.command(name='whoami', help="Checks whether you're registered in the database, and how.")
+async def whoami(ctx):
+    discord_id = int(ctx.message.author.id)
+    conn = create_connection()
+    if conn is not None:
+        raider = make_raider_from_db(conn, 0, discord_id)
+        embed = make_raider_embed(raider)
+        await ctx.send(f"<@{raider.discord_id}>'s character:", embed=embed)
+        conn.close()
+    else:
+        await ctx.send('Could not connect to database!')
+        return
+
+@bot.command(name='partylead', help="Toggles whether or not you're volunteering for party leading.")
+async def partylead(ctx):
+    discord_id = int(ctx.message.author.id)
+    conn = create_connection()
+    if conn is not None:
+        raider = make_raider_from_db(conn, 0, discord_id)
+        if raider.party_lead:
+            raider.party_lead = False
+            update_raider(conn, "party_lead", False, raider.id)
+            await ctx.send('<@{raider.discord_id}> is no longer volunteering to party lead.')
+        else:
+            raider.party_lead = True
+            update_raider(conn, "party_lead", True, raider.id)
+            await ctx.send("<@{raider.discord_id}> may get asked to party lead! This consists primary of placing markers and communicating between your party and the raid host, _not_ necessarily calling.")
+        conn.commit()
+        conn.close()
+    else:
+        await ctx.send('Could not connect to database!')
         return
 
