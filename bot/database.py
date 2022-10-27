@@ -15,7 +15,8 @@ RAID_TYPES = ["BA", "DRN", "DRS"]
 
 
 ROLES = {"t", "h", "m", "c", "r", "d"}
-ROLES_FULL = {"t": "tank", "h": "healer", "m": "melee", "c": "caster", "r": "ranged", "d": "dps"}
+EXPAND_ROLES = {"t": "tank", "h": "healer", "m": "melee", "c": "caster", "r": "ranged", "d": "dps"}
+SHORTEN_ROLES = {"tank": "t", "healer": "h", "melee": "m", "caster": "c", "ranged": "r", "dps": "d"}
 RAID_TYPES = ["BA", "DRN", "DRS"]
 PARTY_SIZE = 8
 MAX_PARTIES = {"BA": 7, "DRN": 3, "DRS": 6}
@@ -31,7 +32,7 @@ class Raider:
         self.name = character_name
         self.discord_id = int(discord_id)
         self.noto = int(notoriety)
-        self.roles = list(roles)
+        self.roles = roles
         self.preferred_role = preferred_role
         self.party_lead = bool(party_lead)
         self.reserve = bool(reserve)
@@ -39,91 +40,30 @@ class Raider:
     
     def __str__(self):
         return self.character_name
-    
-    def add_roles(self, role_string: str) -> bool:
-        """Adds roles separated by commas, a la "tank,dps,caster". 
-           Registering yourself as DPS simply means you have no responsibilities;
-           it does not refer to red classes."""
-        role_string = role_string.lower()
-        role_list = role_string.split(",")
-        for x in role_list:
-            if x in ROLES_FULL:
-                self.roles.add(x[0])
-            elif x in ROLES:
-                self.roles.add(x)
-            else:
-                print(x + " is not a valid role.")
-        self.roles = set(self.roles)
-        self.roles = list(self.roles)
-        self.roles.sort()
+
+    def role_string(self):
         role_string = ""
         for x in self.roles:
-            role_string += x
+             role_string += EXPAND_ROLES[x] + " "
+        return role_string
 
-        conn = create_connection()
-        update_raider(conn, "roles", role_string, self.id)
-        conn.commit()
-        conn.close()
-        self.display_roles()
+def sanitize_roles(roles: str, preferred_role: str):
+    roles = roles.lower()
+    role_list = roles.split(",")
+    roles = ""
+    for x in role_list:
+        if x in ROLES:           roles += x
+        elif x in SHORTEN_ROLES: roles += SHORTEN_ROLES[x]
+    roles = list(set(roles))
+    roles.sort()
+    roles = "".join(roles)
 
-    def display_roles(self):
-        role_string = self.name + " is registered as:"
-        for x in role_list:
-             role_string += " " + ROLES_FULL[x]
-        print(role_string)
+    if preferred_role in ROLES:           preferred_role = preferred_role
+    elif preferred_role in SHORTEN_ROLES: preferred_role = SHORTEN_ROLES[preferred_role]
+    else:                                 preferred_role = "d"
 
-    def remove_roles(self, role_string: str) -> bool:
-        """Removes roles separated by commas, a la "melee,caster"."""
-        role_string = role_string.lower()
-        role_list = role_string.split(",")
-        self.roles = set(self.roles)
-        for x in role_list:
-            if x in ROLES_FULL:
-                self.roles.discard(x[0])
-            elif x in ROLES:
-                self.roles.discard(x)
-            else:
-                print(x + " is not a valid role.")
-        self.roles = list(self.roles)
-        self.roles = self.roles.sort()
-        role_string = ''.join(map(str,list))
+    return roles, preferred_role
 
-        conn = create_connection()
-        update_raider(conn, "roles", role_string, self.id)
-        conn.commit()
-        conn.close()
-        self.display_roles()
-    
-    def set_preferred_role(self, role_string: str):
-        """Set preferred role.  Used as party lead or raid host."""
-        role_string = role_string.lower()
-        if role_string in ROLES_FULL:
-            self.preferred_role = role_string
-        elif role_string in ROLES:
-            self.preferred_role = role_string
-        conn = create_connection()
-        update_raider(conn, "preferred_role", self.preferred_role[0], self.id)
-        conn.commit()
-        conn.close()
-
-    def increase_noto(self):
-        self.noto = self.noto + 1
-        conn = create_connection()
-        update_raider(conn, "notoriety", self.noto, self.id)
-        conn.commit()
-        conn.close()
-        return self.noto
-
-    def reset_noto(self):
-        self.noto = 0
-        conn = create_connection()
-        update_raider(conn, "notoriety", self.noto, self.id)
-        conn.commit()
-        conn.close()
-        print("Notoriety for " + self.name + " has been reset.")
-    
-    def get_past_raids(self):
-        pass
 
 """def make_raid_embed(ev: Raid, guild, add_legend=False):
     try:
@@ -460,7 +400,6 @@ def initialize_db_with_tables():
 def create_raider(conn, discord_id: int, character_name: str, roles: str, preferred_role='d'):
     try:
         cur = conn.cursor()
-        preferred_role = preferred_role[0]
         cur.execute(
             "INSERT INTO raiders (discord_id, character_name, roles, preferred_role) VALUES (%s, %s, %s, %s)",
             (discord_id, character_name, roles, preferred_role))
@@ -539,10 +478,10 @@ def update_raid(conn, field, value, raid_id):
         cur.close()
 
 def get_upcoming_raids(conn):
-    """Finds the raids that have not happened yet."""
+    """Finds raids that have not happened yet."""
     try:
         cur = conn.cursor()
         cur.execute("SELECT * from raids WHERE raid_time >= now();")
     except (Exception, Error) as error:
         print("Error getting upcoming raids.", error)
-    return cur.fetchall()
+    return cur.fetchmany(5)
