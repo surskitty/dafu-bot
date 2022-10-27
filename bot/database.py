@@ -1,6 +1,7 @@
 from typing import List
 import psycopg2
 from psycopg2 import Error
+from psycopg2 import sql
 import os
 from urllib.parse import urlparse 
 
@@ -513,11 +514,11 @@ def get_raiders_by_raid_id(conn, raid_id: int):
 
 def update_raider(conn, field, value, raider_id):
     if field in RAIDERS_COLUMNS:
-        sql = ''' UPDATE raiders
-                  SET %s = %s
-                  WHERE id = %s'''
+        query = sql.SQL("UPDATE {table} SET {field} = %s WHERE raider_id = %s").format(
+                table=sql.Identifier('raiders'),
+                field=sql.Identifier(field))
         cur = conn.cursor()
-        cur.execute(sql, (field, value, raider_id))
+        cur.execute(query,(value, raider_id))
         conn.commit()
     else:
         print(f"{field} not in raiders columns")
@@ -525,12 +526,12 @@ def update_raider(conn, field, value, raider_id):
         cur.close()
 
 def update_raid(conn, field, value, raid_id):
-    if field in RAIDERS_COLUMNS:
-        sql = ''' UPDATE raids
-                  SET %s = %s
-                  WHERE id = %s'''
+    if field in RAIDS_COLUMNS:
+        query = sql.SQL("UPDATE {table} SET {field} = %s WHERE raid_id = %s").format(
+                table=sql.Identifier('raids'),
+                field=sql.Identifier(field))
         cur = conn.cursor()
-        cur.execute(sql, (field, value, raid_id))
+        cur.execute(query,(value, raider_id))
         conn.commit()
     else:
         print(f"{field} not in raids columns")

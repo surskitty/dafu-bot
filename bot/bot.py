@@ -110,7 +110,7 @@ async def whoami(ctx):
     if conn is not None:
         raider = make_raider_from_db(conn, 0, discord_id)
         embed = make_raider_embed(raider)
-        await ctx.send(f"<@{raider.discord_id}>'s character:", embed=embed)
+        await ctx.send(f"<@{discord_id}>'s character:", embed=embed)
         conn.close()
     else:
         await ctx.send('Could not connect to database!')
@@ -125,11 +125,11 @@ async def partylead(ctx):
         if raider.party_lead:
             raider.party_lead = False
             update_raider(conn, "party_lead", False, raider.id)
-            await ctx.send('<@{raider.discord_id}> is no longer volunteering to party lead.')
+            await ctx.send('<@{discord_id}> is no longer volunteering to party lead.')
         else:
             raider.party_lead = True
             update_raider(conn, "party_lead", True, raider.id)
-            await ctx.send("<@{raider.discord_id}> may get asked to party lead! This consists primary of placing markers and communicating between your party and the raid host, _not_ necessarily calling.")
+            await ctx.send("<@{discord_id}> may get asked to party lead! This consists primary of placing markers and communicating between your party and the raid host, _not_ necessarily calling.")
         conn.commit()
         conn.close()
     else:
