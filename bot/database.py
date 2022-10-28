@@ -4,6 +4,7 @@ from psycopg2 import Error
 from psycopg2 import sql
 import os
 from urllib.parse import urlparse 
+from datetime import datetime
 
 RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles", 
                  "preferred_role", "notoriety", "party_lead", "reserve", "duelist"]
@@ -17,10 +18,10 @@ RAID_TYPES = ["BA", "DRN", "DRS"]
 ROLES = {"t", "h", "m", "c", "r", "d"}
 EXPAND_ROLES = {"t": "tank", "h": "healer", "m": "melee", "c": "caster", "r": "ranged", "d": "dps"}
 SHORTEN_ROLES = {"tank": "t", "healer": "h", "melee": "m", "caster": "c", "ranged": "r", "dps": "d"}
-RAID_TYPES = ["BA", "DRN", "DRS"]
+RAID_TYPES = ["BA", "DRS", "DRN", "N/A"]
 PARTY_SIZE = 8
-MAX_PARTIES = {"BA": 7, "DRN": 3, "DRS": 6}
-REQ_ROLES_PER_PARTY = {"BA": "thh", "DRN": "tcr", "DRS": "tthhcr"}
+MAX_PARTIES = {"BA": 7, "DRN": 3, "DRS": 6, "N/A": 7}
+REQ_ROLES_PER_PARTY = {"BA": "thh", "DRN": "tcr", "DRS": "tthhcr", "N/A": ""}
 
 raids = []
 raiders = []
@@ -65,46 +66,36 @@ def sanitize_roles(roles: str, preferred_role: str):
     return roles, preferred_role
 
 
-"""def make_raid_embed(ev: Raid, guild, add_legend=False):
-    try:
-        raid_host = guild.get_member(ev.host_id)
-        raid_host_name = raid_host.name
-    except Exception:
-        raid_host_name = "INVALID_MEMBER"
-    if ev.organiser_id > 0:
-        try:
-            raid_organiser = guild.get_member(ev.organiser)
-            organiser_name = raid_organiser.name
-        except Exception:
-            organiser_name = "INVALID_MEMBER"
-    
-    embed = discord.Embed(title=f"**Run {ev.id} -- {ev.**",
+def make_raid_embed(ev):
+    embed = None
+    if ev.raid_type == "BA":
+        embed = discord.Embed(title=f"**The Baldesion Arsenal",
+                          description=f"called & hosted by <@{ev.host_discord}>**",
+                          color=discord.Color.dark_gold())
+    elif ev.raid_type == "DRS":
+        embed = discord.Embed(title=f"**Delubrum Reginae SAVAGE",
+                          description=f"called & hosted by <@{ev.host_discord}>**",
+                          color=discord.Color.dark_gold())
+    else:
+        embed = discord.Embed(title=f"**{ev.raid_type} -- {ev.host_id}",
                           description=f"Organized by **{creator_name}**",
                           color=discord.Color.dark_gold())
-    embed.add_field(name="**Name**", value=ev.name, inline=False)
+    if ev.organiser_id > 0:
+        embed.add_field(name="**Organiser & Cat Wrangler**", value=f"<@{ev.organiser_id}>", inline=False)
     embed.add_field(name="**Time**", value=f"{ev.get_discord_time_format()} -> [Countdown]"
                                            f"({build_countdown_link(ev.timestamp)})", inline=False)
-    embed.set_footer(text=f"This event is {ev.state}")
-    return embed"""
+    return embed
 
 class Raid:
-    def __init__(self, raid_id: int, raid_type: str, host_id: int, host_discord: int, organiser_id: int, raid_time: int) -> bool:
+    def __init__(self, raid_id: int, raid_type: str, host_id: int, host_discord: int, organiser_id: int, raid_time: datetime) -> bool:
         """Initialises a raid. host_discord and organiser_id both refer to discord IDs, not to DB IDs!"""
         self.raid_id = int(raid_id)
+        self.raid_type = raid_type
 
-        if isdigit(raid_type):
-            raid_type = int(raid_type)
-            if raid_type < len(RAID_TYPES):
-                self.raid_type = RAID_TYPES[raid_type]
-            else:
-                return False
+        if self.raid_type in RAID_TYPES:
+            self.req_roles = REQ_ROLES_PER_PARTY[self.raid_type]
         else:
-            raid_type = raid_type.upper()
-            if raid_type in RAID_TYPES:
-                self.raid_type = raid_type
-                self.req_roles = REQ_ROLES_PER_PARTY[self.raid_type]
-            else:
-                return False
+            return False
 
         self.host_discord = int(host_discord)
         self.organiser = int(organiser_id)
@@ -117,9 +108,14 @@ class Raid:
         else:
             self.host_id = host_id
         
+        self.raid_time = raid_time
         self.required_party_members = [self.host_id]
 
         return True
+
+    def get_discord_time_format(self) -> str:
+        """Returns the unix epoch formatted in a way Discord automatically displays the correct timezone"""
+        return "<t:" + self.raid_time.__str__() + ">"
 
     def build_roster(self):
         """Builds the list of everyone signed up for the raid."""
@@ -361,7 +357,7 @@ def initialize_db_with_tables():
             host_id INTEGER NOT NULL,
             host_discord BIGINT NOT NULL,
             organiser_id BIGINT,
-            raid_time TIMESTAMP NOT NULL,
+            raid_time TIMESTAMPTZ NOT NULL,
             message_link TEXT NOT NULL UNIQUE,
             state SMALLINT NOT NULL,
             FOREIGN KEY (host_id)
@@ -485,3 +481,9 @@ def get_upcoming_raids(conn):
     except (Exception, Error) as error:
         print("Error getting upcoming raids.", error)
     return cur.fetchmany(5)
+
+def build_countdown_link(timestamp):
+    dt_obj = datetime.fromtimestamp(timestamp, tz=timezone("UTC"))
+    link = f"https://www.timeanddate.com/countdown/generic?iso={dt_obj.year}{dt_obj.month:02}{dt_obj.day:02}" \
+           f"T{dt_obj.hour:02}{dt_obj.minute:02}{dt_obj.second:02}&p0=0&font=cursive"
+    return link

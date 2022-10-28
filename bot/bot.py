@@ -21,26 +21,26 @@ from bot.database import *
 async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
 
-# @bot.command(name='healthcheck', help='Tests if the database connection is working')
-# async def healthcheck(ctx):
-#    conn = create_connection()
-#    if conn is not None:
-#        response = f'Seems good, {ctx.message.author.mention}!'
-#    else:
-#        response = f"Something isn't right."
-#    await ctx.send(response)
-#    conn.close()
+@bot.command(name='healthcheck', help='Tests if the database connection is working', hidden=True)
+async def healthcheck(ctx):
+    conn = create_connection()
+    if conn is not None:
+        response = f'Seems good, {ctx.message.author.mention}!'
+    else:
+        response = f"Something isn't right."
+    await ctx.send(response)
+    conn.close()
 
-# @bot.command(name='hello', help='Answers with an appropriate hello message')
-#async def hello(ctx):
-#    options = [
-#        f'Hello, {ctx.message.author.mention}!',
-#        f"What's up, {ctx.message.author.mention}?",
-#        f'Good day to you, {ctx.message.author.mention}!',
-#        f'Lali-ho, {ctx.message.author.mention}!',
-#    ]
-#    response = random.choice(options)
-#    await ctx.send(response)
+@bot.command(name='hello', help='Answers with an appropriate hello message', hidden=True)
+async def hello(ctx):
+    options = [
+        f'Hello, {ctx.message.author.mention}!',
+        f"What's up, {ctx.message.author.mention}?",
+        f'Good day to you, {ctx.message.author.mention}!',
+        f'Lali-ho, {ctx.message.author.mention}!',
+    ]
+    response = random.choice(options)
+    await ctx.send(response)
 
 def make_raider_embed(raider):
     embed = discord.Embed(title=raider.name, description=raider.role_string(),
@@ -51,18 +51,12 @@ def make_raider_embed(raider):
     embed.set_footer(text=f"Orb Ponderer #{raider.id}")
     return embed
 
-#@bot.command(name='init', help="Initialises the database if it isn't already."
-#                               "Can only be executed by admins.")
-#@commands.has_permissions(administrator=True)
-#async def init(ctx):
-#    success = initialize_db_with_tables()
-#    if success:
-#        await ctx.send(f"Database initialised!")
-#    else:
-#        await ctx.send('Initialisation failed in some way.')
-
-@bot.command(name='register', help='Registers your character')
-async def register(ctx, character_name: str, roles: str, preferred_role='d'):
+@bot.command(name='register', brief="Registers your character with the bot.",
+    help="""Registers your character with the bot. 
+    Format as `$register 'Meteor Survivor' tank,healer,ranged,caster dps`.
+    The first list of roles is all roles you're willing to play as; the one after the space is the one you prefer. 
+    Note that signing up as ranged or caster mean that you are willing to bring Lost Dervish or Lost Cure IV!""")
+async def register(ctx, character_name: str, roles: str, preferred_role='dps'):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
@@ -93,6 +87,10 @@ async def changename(ctx, character_name):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
+        raider_id = get_raider_id_by_discord_id(conn, discord_id)
+        if not raider_id:
+            await ctx.send(f"<@{discord_id}> is not currently registered. `$register` first.")
+            return
         raider = make_raider_from_db(conn, 0, discord_id)
         character_name = re.sub(r"[^A-Za-z0-9 #']+", '', character_name)
         update_raider(conn, "character_name", character_name, raider.id)
@@ -105,11 +103,15 @@ async def changename(ctx, character_name):
         await ctx.send('Could not connect to database!')
         return
 
-@bot.command(name='whoami', help="Checks whether you're registered in the database, and how.")
+@bot.command(name='whoami', brief="Checks whether you're registered in the database, and how.")
 async def whoami(ctx):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
+        raider_id = get_raider_id_by_discord_id(conn, discord_id)
+        if not raider_id:
+            await ctx.send(f"<@{discord_id}> is not currently registered. `$register` first.")
+            return
         raider = make_raider_from_db(conn, 0, discord_id)
         embed = make_raider_embed(raider)
         await ctx.send(f"<@{discord_id}>'s character:", embed=embed)
@@ -123,6 +125,10 @@ async def partylead(ctx):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
+        raider_id = get_raider_id_by_discord_id(conn, discord_id)
+        if not raider_id:
+            await ctx.send(f"<@{discord_id}> is not currently registered. `$register` first.")
+            return
         raider = make_raider_from_db(conn, 0, discord_id)
         if raider.party_lead:
             raider.party_lead = False
@@ -143,6 +149,10 @@ async def setroles(ctx, roles: str, preferred_role='d'):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
+        raider_id = get_raider_id_by_discord_id(conn, discord_id)
+        if not raider_id:
+            await ctx.send(f"<@{discord_id}> is not currently registered. `$register` first.")
+            return
         raider = make_raider_from_db(conn, 0, discord_id)
         set_preferred = False
         if preferred_role is not None or preferred_role != "":
@@ -158,4 +168,5 @@ async def setroles(ctx, roles: str, preferred_role='d'):
     else:
         await ctx.send('Could not connect to database!')
         return
+
 
