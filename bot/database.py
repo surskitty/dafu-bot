@@ -12,19 +12,29 @@ RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles",
 RAIDS_COLUMNS   = ["raid_id", "raid_type", "host_id", "organiser_id", 
                    "raid_time", "message_link", "state"]
 
-RAID_TYPES = ["BA", "DRN", "DRS"]
+RAID_TYPES = ["BA", "DRS"]
 
 
 ROLES = {"t", "h", "m", "c", "r", "d"}
 EXPAND_ROLES = {"t": "tank", "h": "healer", "m": "melee", "c": "caster", "r": "ranged", "d": "dps"}
 SHORTEN_ROLES = {"tank": "t", "healer": "h", "melee": "m", "caster": "c", "ranged": "r", "dps": "d"}
-RAID_TYPES = ["BA", "DRS", "DRN", "N/A"]
 PARTY_SIZE = 8
 MAX_PARTIES = {"BA": 7, "DRN": 3, "DRS": 6, "N/A": 7}
-REQ_ROLES_PER_PARTY = {"BA": "thh", "DRN": "tcr", "DRS": "tthhcr", "N/A": ""}
+REQ_ROLES_PER_PARTY = {"BA": "thh", "DRS": "tthhcr"}
 
 raids = []
 raiders = []
+
+def create_connection():
+    result = urlparse(os.getenv('DATABASE_URL'))
+    USER = result.username
+    PASSWORD = result.password
+    DATABASE = result.path[1:]
+    HOST = result.hostname
+    PORT = result.port
+
+    conn = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST,port=PORT)
+    return conn
 
 class Raider:
     def __init__(self, raider_id, discord_id, character_name, roles, preferred_role, 
@@ -86,32 +96,32 @@ def make_raid_embed(ev):
                                            f"({build_countdown_link(ev.timestamp)})", inline=False)
     return embed
 
+def make_raid_from_db(conn, raid_id: int):
+    """Given the raid id, read from the database and parse as a Raid."""
+    attributes = get_raid_by_id(conn, raid_id)
+    raid = Raid(attributes[0], attributes[1], attributes[2], attributes[3],
+        attributes[4], attributes[5], attributes[6])
+    return raid
+
 class Raid:
-    def __init__(self, raid_id: int, raid_type: str, host_id: int, host_discord: int, organiser_id: int, raid_time: datetime) -> bool:
+    def __init__(self, raid_id: int, raid_type: int, host_id: int, host_discord: int, organiser_id: int, raid_time: datetime, message_link: str):
         """Initialises a raid. host_discord and organiser_id both refer to discord IDs, not to DB IDs!"""
         self.raid_id = int(raid_id)
-        self.raid_type = raid_type
-
-        if self.raid_type in RAID_TYPES:
-            self.req_roles = REQ_ROLES_PER_PARTY[self.raid_type]
-        else:
-            return False
-
+        self.raid_type = RAID_TYPES[raid_type]
+        self.req_roles = REQ_ROLES_PER_PARTY[self.raid_type]
         self.host_discord = int(host_discord)
         self.organiser = int(organiser_id)
+        self.message_link = message_link
 
         if host_id < 1:
             conn = create_connection()
             self.host_id = get_raider_id_by_discord_id(conn, self.host_discord)
-            conn.commit()
             conn.close()
         else:
             self.host_id = host_id
         
         self.raid_time = raid_time
         self.required_party_members = [self.host_id]
-
-        return True
 
     def get_discord_time_format(self) -> str:
         """Returns the unix epoch formatted in a way Discord automatically displays the correct timezone"""
@@ -320,18 +330,6 @@ def make_raider_from_db(conn, raider_id: int, discord_id: int):
         attributes[4], attributes[5], attributes[6], attributes[7], attributes[8])
     return raider
 
-
-def create_connection():
-    result = urlparse(os.getenv('DATABASE_URL'))
-    USER = result.username
-    PASSWORD = result.password
-    DATABASE = result.path[1:]
-    HOST = result.hostname
-    PORT = result.port
-
-    conn = psycopg2.connect(database=DATABASE, user=USER, password=PASSWORD, host=HOST,port=PORT)
-    return conn
-
 def initialize_db_with_tables():
     """initialise database"""
     conn = create_connection()
@@ -358,8 +356,7 @@ def initialize_db_with_tables():
             host_discord BIGINT NOT NULL,
             organiser_id BIGINT,
             raid_time TIMESTAMPTZ NOT NULL,
-            message_link TEXT NOT NULL UNIQUE,
-            state SMALLINT NOT NULL,
+            message_link TEXT,
             FOREIGN KEY (host_id)
                 REFERENCES raiders(raider_id)
                 ON UPDATE CASCADE ON DELETE CASCADE
@@ -376,6 +373,11 @@ def initialize_db_with_tables():
             FOREIGN KEY (raider_id)
                 REFERENCES raiders (raider_id)
                 ON UPDATE CASCADE ON DELETE CASCADE
+        )
+        """,
+        """CREATE TABLE IF NOT EXISTS channels (
+            name VARCHAR (6) NOT NULL UNIQUE,
+            channel_id BIGINT NOT NULL UNIQUE
         )
         """)
 
@@ -404,6 +406,24 @@ def create_raider(conn, discord_id: int, character_name: str, roles: str, prefer
     finally:
         if cur is not None:
             cur.close()
+
+def create_raid(conn, raid_type: int, host_discord, organiser_id, raid_time):
+    raid_id = 0
+    if raid_type > len(RAID_TYPES): return raid_id
+    host_id = get_raider_id_by_discord_id(host_discord)
+    if host_id is None: return raid_id
+    try:
+        cur = conn.cursor()
+        cur.execute(
+            "INSERT INTO raids (raid_type, host_id, host_discord, organiser_id, raid_time) VALUES (%s, %s, %s, %s, %s) RETURNING raid_id",
+            (raid_type, host_id, host_discord, organiser_id, raid_time))
+        raid_id = cursor.fetchone()[0]
+    except (Exception, Error) as error:
+        print("Error while connecting to PostgreSQL", error)
+    finally:
+        if cur is not None:
+            cur.close()
+            return raid_id
 
 def get_raid_by_id(conn, raid_id: int):
     """Find the raid given id"""

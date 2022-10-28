@@ -170,3 +170,78 @@ async def setroles(ctx, roles: str, preferred_role='d'):
         return
 
 
+
+
+@bot.command(name='ba', help='Creates a BA run with the given parameters: '
+                             'name date (format y-m-d) time (format HH:MM) '
+                             'timezone (optional, default UTC)\n'
+                             'and then \@ing your cohost if desired')
+async def ba(ctx, date, start_time, user_timezone, cohost):
+    host_raid(ctx, "BA", date, start_time, user_timezone, cohost)
+    return
+
+@bot.command(name='drs', help='Creates a DRS run with the given parameters: '
+                              'name date (format y-m-d) time (format HH:MM) '
+                             'timezone (optional, default UTC)\n'
+                             'and then \@ing your cohost if desired')
+async def ba(ctx, date, start_time, user_timezone, cohost):
+    host_raid(ctx, "DRS", date, start_time, user_timezone, cohost)
+    return
+
+@bot.command(name='host_raid', hidden=True)
+async def host_raid(ctx, raid_type, date, start_time, user_timezone, cohost):
+    conn = create_connection()
+    if conn is not None:
+        try:
+            tz = timezone(user_timezone)
+        except Exception:
+            conn.close()
+            tz_link = "https://gist.github.com/heyalexej/8bf688fd67d7199be4a1682b3eec7568"
+            embed = discord.Embed(description=f"A link to all possible timezones can be found [here]({tz_link})",
+                                  color=discord.Color.dark_gold())
+            await ctx.send(f"Unknown timezone {user_timezone}, use format like 'Europe/Amsterdam'", embed=embed)
+            return
+
+        try:
+            y, m, d = date.split("-")
+            hour, minute = start_time.split(":")
+            dt_obj = datetime(int(y), int(m), int(d), int(hour), int(minute))
+            dt_obj = tz.normalize(tz.localize(dt_obj))
+        except Exception:
+            conn.close()
+            await ctx.send(f"Could not parse date and/or time, make sure to format like this: "
+                           f"yyyy-mm-dd hh:mm (in 24 hour format)")
+            return
+        
+        if len(cohost) > 0:
+            organiser_id = int(cohost[2:-1])
+        else:
+            organiser_id = 0
+        
+        ev_id = create_raid(conn, RAID_TYPES.index(raid_type), host_discord, organiser_id, dt_obj)
+
+        try:
+            raid = make_raid_from_db(conn, ev_id)
+        except Exception:
+            conn.close()
+            await ctx.send(f'Could not find event with id {ev_id}. This event might not exist (yet).')
+            return
+        embed = make_raid_embed(event)
+#        # Check if we have an event channel
+#        db_eventchannel = get_server_info(conn, "event_channel")
+#        if db_eventchannel:
+#            channel = db_eventchannel[0][2]
+#            message = await ctx.guild.get_channel(int(channel[2:-1])).send(embed=embed)
+#            new_embed = make_event_embed(event, ctx.guild, False)
+#            new_embed.add_field(name="**Original post**", value=f"[link]({message.jump_url})", inline=False)
+#            await ctx.send(embed=new_embed)
+#        else:
+#            message = await ctx.send(embed=embed)
+#        update_raid(conn, "message_link", message.jump_url, ev_id)
+#        await message.add_reaction("🔛")
+        conn.close()
+        return
+    else:
+        await ctx.send('Could not connect to database. Need connection to create and save events.')
+        return
+
