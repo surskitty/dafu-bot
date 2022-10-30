@@ -9,8 +9,15 @@ import discord
 from discord.ext import commands
 from pytz import timezone
 
+import dotenv
+import os
+
 intents = discord.Intents().all()
-bot = commands.Bot(command_prefix='$', intents=intents)
+bot = commands.Bot(command_prefix='~', intents=intents)
+
+PLANNING_CHANNEL     = os.getenv('PLANNING_DRS')
+ANNOUNCEMENT_CHANNEL = os.getenv('ANNOUNCING_DRS')
+RUN_REQUEST_CHANNEL = os.getenv('RUN_REQUEST_CHANNEL')
 
 def run(TOKEN):
     bot.run(TOKEN)
@@ -48,7 +55,7 @@ def make_raider_embed(raider):
     embed.add_field(name="**Preferred role**", value=EXPAND_ROLES[raider.preferred_role], inline=False)
     if raider.party_lead: embed.add_field(name="**Volunteering for Party Lead**", value="Cat wrangling commence!", inline=False)
     if raider.reserve:    embed.add_field(name="**Benchwarmer**", value="Only going to runs that need bodies", inline=False)
-    embed.set_footer(text=f"Orb Ponderer #{raider.id}")
+    embed.set_footer(text=f"Dog Ponderer #{raider.id}")
     return embed
 
 @bot.command(name='register', brief="Registers your character with the bot.",
@@ -144,8 +151,8 @@ async def partylead(ctx):
         await ctx.send('Could not connect to database!')
         return
 
-@bot.command(name='setroles', help="Sets your roles in the database")
-async def setroles(ctx, roles: str, preferred_role='d'):
+@bot.command(name='changeroles', help="Changes your roles in the database")
+async def changeroles(ctx, roles: str, preferred_role='d'):
     discord_id = int(ctx.message.author.id)
     conn = create_connection()
     if conn is not None:
@@ -169,27 +176,15 @@ async def setroles(ctx, roles: str, preferred_role='d'):
         await ctx.send('Could not connect to database!')
         return
 
-
-
-
-@bot.command(name='ba', help='Creates a BA run with the given parameters: '
-                             'name date (format y-m-d) time (format HH:MM) '
-                             'timezone (optional, default UTC)\n'
-                             'and then \@ing your cohost if desired')
-async def ba(ctx, date, start_time, user_timezone, cohost):
-    host_raid(ctx, "BA", date, start_time, user_timezone, cohost)
-    return
-
 @bot.command(name='drs', help='Creates a DRS run with the given parameters: '
                               'name date (format y-m-d) time (format HH:MM) '
-                             'timezone (optional, default UTC)\n'
-                             'and then \@ing your cohost if desired')
-async def ba(ctx, date, start_time, user_timezone, cohost):
-    host_raid(ctx, "DRS", date, start_time, user_timezone, cohost)
-    return
+                              'timezone (optional, default UTC)\n'
+                              'and then \@ing your cohost if desired', hidden=True)
+async def host_drs(ctx, date, start_time, user_timezone, cohost):
+    if int(ctx.channel.id) != RUN_REQUEST_CHANNEL:
+        await ctx.send(f"Get thee to <#{RUN_REQUEST_CHANNEL}> ;)")
+        return
 
-@bot.command(name='host_raid', hidden=True)
-async def host_raid(ctx, raid_type, date, start_time, user_timezone, cohost):
     conn = create_connection()
     if conn is not None:
         try:
@@ -224,20 +219,18 @@ async def host_raid(ctx, raid_type, date, start_time, user_timezone, cohost):
             raid = make_raid_from_db(conn, ev_id)
         except Exception:
             conn.close()
-            await ctx.send(f'Could not find event with id {ev_id}. This event might not exist (yet).')
+            await ctx.send(f'Failed to create {ev_id}.')
             return
-        embed = make_raid_embed(event)
-#        # Check if we have an event channel
-#        db_eventchannel = get_server_info(conn, "event_channel")
-#        if db_eventchannel:
-#            channel = db_eventchannel[0][2]
-#            message = await ctx.guild.get_channel(int(channel[2:-1])).send(embed=embed)
+        embed = make_raid_embed(raid)
+        # Check if we have an event channel
+#        channel = PLANNING_CHANNEL
+#        message = await ctx.guild.get_channel(int(channel)).send(embed=embed)
 #            new_embed = make_event_embed(event, ctx.guild, False)
 #            new_embed.add_field(name="**Original post**", value=f"[link]({message.jump_url})", inline=False)
 #            await ctx.send(embed=new_embed)
 #        else:
 #            message = await ctx.send(embed=embed)
-#        update_raid(conn, "message_link", message.jump_url, ev_id)
+#        update_raid(conn, "planning_link", message.jump_url, ev_id)
 #        await message.add_reaction("🔛")
         conn.close()
         return

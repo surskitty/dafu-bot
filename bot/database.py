@@ -9,8 +9,8 @@ from datetime import datetime
 RAIDERS_COLUMNS = ["raider_id", "discord_id", "character_name", "roles", 
                  "preferred_role", "notoriety", "party_lead", "reserve", "duelist"]
 
-RAIDS_COLUMNS   = ["raid_id", "raid_type", "host_id", "organiser_id", 
-                   "raid_time", "message_link", "state"]
+RAIDS_COLUMNS   = ["raid_id", "raid_type", "host_id", "host_discord", "organiser_id", 
+                   "raid_time", "planning_link", "announcement_link"]
 
 RAID_TYPES = ["BA", "DRS"]
 
@@ -94,24 +94,28 @@ def make_raid_embed(ev):
         embed.add_field(name="**Organiser & Cat Wrangler**", value=f"<@{ev.organiser_id}>", inline=False)
     embed.add_field(name="**Time**", value=f"{ev.get_discord_time_format()} -> [Countdown]"
                                            f"({build_countdown_link(ev.timestamp)})", inline=False)
+    if ev.planning_link is not None:
+        embed.add_field(name="**More Details**", value=f"[link]({ev.planning_link})", inline=False)
     return embed
 
 def make_raid_from_db(conn, raid_id: int):
     """Given the raid id, read from the database and parse as a Raid."""
     attributes = get_raid_by_id(conn, raid_id)
     raid = Raid(attributes[0], attributes[1], attributes[2], attributes[3],
-        attributes[4], attributes[5], attributes[6])
+        attributes[4], attributes[5], attributes[6], attributes[7])
     return raid
 
 class Raid:
-    def __init__(self, raid_id: int, raid_type: int, host_id: int, host_discord: int, organiser_id: int, raid_time: datetime, message_link: str):
+    def __init__(self, raid_id: int, raid_type: int, host_id: int, host_discord: int, 
+        organiser_id: int, raid_time: datetime, planning_link: str, announcement_link: str):
         """Initialises a raid. host_discord and organiser_id both refer to discord IDs, not to DB IDs!"""
         self.raid_id = int(raid_id)
         self.raid_type = RAID_TYPES[raid_type]
         self.req_roles = REQ_ROLES_PER_PARTY[self.raid_type]
         self.host_discord = int(host_discord)
         self.organiser = int(organiser_id)
-        self.message_link = message_link
+        self.planning_link = planning_link
+        self.announcement_link = announcement_link
 
         if host_id < 1:
             conn = create_connection()
@@ -356,7 +360,8 @@ def initialize_db_with_tables():
             host_discord BIGINT NOT NULL,
             organiser_id BIGINT,
             raid_time TIMESTAMPTZ NOT NULL,
-            message_link TEXT,
+            planning_link TEXT,
+            announcement_link TEXT,
             FOREIGN KEY (host_id)
                 REFERENCES raiders(raider_id)
                 ON UPDATE CASCADE ON DELETE CASCADE
