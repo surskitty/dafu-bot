@@ -12,6 +12,9 @@ from pytz import timezone
 import dotenv
 import os
 
+import ffxivweather
+import datetime
+
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix='~', intents=intents)
 
@@ -237,4 +240,33 @@ async def host_drs(ctx, date, start_time, user_timezone, cohost):
     else:
         await ctx.send('Could not connect to database. Need connection to create and save events.')
         return
+
+
+@bot.command(name='forecast', help='Forecast')
+async def check_weather(ctx):
+    zones = ("Eureka Anemos", "Eureka Pagos", "Eureka Pyros", "Bozjan Southern Front")
+    weathers = {}
+    weathers["Eureka Anemos"] = {"Gales"}
+    weathers["Eureka Pagos"] = {"Fog", "Blizzards"}
+    weathers["Eureka Pyros"] = {"Blizzards", "Heat Waves"}
+    weathers["Bozjan Southern Front"] = {"Dust Storms", "Wind"}
+    numWeather = 5
+    goalWeathers = []
+    
+    class Weather:
+        def __init__(self, zone, name, time):
+           self.zone = zone
+           self.name = name
+           self.time = time
+    
+    for zone in zones:
+       forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
+       for weather, start_time in forecast:
+          fmt2 = datetime.timestamp(start_time)
+          if weather["name_en"] in weathers[zone]:
+             goalWeathers.append(Weather(zone, weather["name_en"], fmt2))
+    
+    goalWeathers = sorted(goalWeathers, key=operator.attrgetter("time"))
+    for weather in goalWeathers:
+        await ctx.send(f'{weather.zone} - {weather.name} - <t:{weather.time:.0f}:R> - \<t:{weather.time:.0f}:R\>')
 
