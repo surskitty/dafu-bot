@@ -8,12 +8,11 @@ import re
 import discord
 from discord.ext import commands
 from pytz import timezone
+import datetime
+import ffxivweather
 
 import dotenv
 import os
-
-import ffxivweather
-import datetime
 
 intents = discord.Intents().all()
 bot = commands.Bot(command_prefix='~', intents=intents)
@@ -241,7 +240,6 @@ async def host_drs(ctx, date, start_time, user_timezone, cohost):
         await ctx.send('Could not connect to database. Need connection to create and save events.')
         return
 
-
 class Weather:
     def __init__(self, zone, name, time):
         self.zone = zone
@@ -259,9 +257,8 @@ weathers["Zadnor"] = {"Rain"}
 async def forecast(ctx):
     zones = ("Eureka Pagos", "Eureka Pyros", "Bozjan Southern Front", "Zadnor")
     numWeather = 5
+
     goalWeathers = []
-    
-    
     for zone in zones:
        forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
        for weather, start_time in forecast:
@@ -292,7 +289,6 @@ async def forecast_eureka(ctx):
     finalString = f""
     for weather in goalWeathers:
         finalString += f'{weather.zone} - {weather.name} - <t:{weather.time:.0f}:R> - \<t:{weather.time:.0f}:R\>\n'
-
     await ctx.send(finalString)
 
 @bot.command(name='bozjaforecast', help='Bozja Forecast. Shows more windows than regular forecast.')
@@ -313,4 +309,11 @@ async def forecast_bozja(ctx):
     for weather in goalWeathers:
         finalString += f'{weather.zone} - {weather.name} - <t:{weather.time:.0f}:R> - \<t:{weather.time:.0f}:R\>\n'
     await ctx.send(finalString)
+
+@bot.command(name='fish', help='Updates status with a random fish.', hidden=True)
+async def fish(ctx):
+    fishies = ("for Mora Tecta", "for Green Prismfish", "for Sculptors", "for Egg Salad", "for the Unconditional", "Charibenet escape", "to Prize Catch Triple Hook Dafu")
+    fish = random.choice(fishies)
+    await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=fish))
+    time.sleep(2)
 
