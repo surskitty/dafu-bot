@@ -2,7 +2,6 @@ import time
 from typing import List
 import random
 import operator
-import psycopg2
 import re
 
 import discord
@@ -61,7 +60,7 @@ async def forecast(ctx):
     for zone in zones:
        forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
        for weather, start_time in forecast:
-          fmt2 = datetime.timestamp(start_time)
+          fmt2 = time.mktime(start_time.timetuple()) + start_time.microsecond/1e6
           if weather["name_en"] in weathers[zone]:
              goalWeathers.append(Weather(zone, weather["name_en"], fmt2))
     
@@ -80,7 +79,7 @@ async def forecast_eureka(ctx):
     for zone in zones:
        forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
        for weather, start_time in forecast:
-          fmt2 = datetime.timestamp(start_time)
+          fmt2 = time.mktime(start_time.timetuple()) + start_time.microsecond/1e6
           if weather["name_en"] in weathers[zone]:
              goalWeathers.append(Weather(zone, weather["name_en"], fmt2))
     
@@ -99,7 +98,7 @@ async def forecast_bozja(ctx):
     for zone in zones:
        forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
        for weather, start_time in forecast:
-          fmt2 = datetime.timestamp(start_time)
+          fmt2 = time.mktime(start_time.timetuple()) + start_time.microsecond/1e6
           if weather["name_en"] in weathers[zone]:
              goalWeathers.append(Weather(zone, weather["name_en"], fmt2))
     
