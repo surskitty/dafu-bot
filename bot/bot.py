@@ -48,7 +48,7 @@ weathers = {}
 weathers["Eureka Anemos"] = {"Gales"}
 weathers["Eureka Pagos"] = {"Fog", "Blizzards"}
 weathers["Eureka Pyros"] = {"Blizzards", "Heat Waves"}
-weathers["Bozjan Southern Front"] = {"Dust Storms", "Wind"}
+weathers["Bozjan Southern Front"] = {"Dust Storms", "Wind", "Thunder"}
 weathers["Zadnor"] = {"Rain"}
 
 @bot.command(name='forecast', help='Forecast')
@@ -110,8 +110,62 @@ async def forecast_bozja(ctx):
 
 @bot.command(name='fish', help='Updates status with a random fish.', hidden=True)
 async def fish(ctx):
-    fishies = ("for Mora Tecta", "for Green Prismfish", "for Sculptors", "for Egg Salad", "for the Unconditional", "Charibenet escape", "to Prize Catch Triple Hook Dafu")
+    fishies = ("for Mora Tecta", "for Green Prismfish", "for Sculptors", "for Egg Salad", "for the Unconditional", "Charibenet escape", "to Triple Hook Dafu")
     fish = random.choice(fishies)
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=fish))
     time.sleep(2)
+
+@bot.command(name='bozjafrags', help='Lists what fragments drop where.')
+async def bozja_frags(ctx):
+    fragList = "⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops! \n \n" \
+               "***Bozja Southern Front:*** \n" \
+               "**ZONE ONE** reflect during **thunder** \n" \
+               "> 🐹 Skill (basic essences) \n" \
+               "> ⛈️💀 Preparation (Phoenix, Potion) \n" \
+               "> ⭐ Caution (Manawall, Cure 3, Incense, etc) \n" \
+               "**ZONE TWO** reflect during **dust** or **wind** \n" \
+               "> 🐹 Awakening (Profane, Irregular, basic essences) \n" \
+               "> ⛈️💀 Care (Reraiser, Potion Kit, Ether Kit) \n" \
+               "> ⭐ Ingenuity (Spellforge, Steelsting, Dispel, etc) \n" \
+               "**ZONE THREE** reflect during **wind** or **dust** \n" \
+               "> 🐹 Compassion (Cure 2, Cure 4, Arise, Medikit) \n" \
+               "> ⛈️💀 Support (Reflect, Stoneskin, Bravery)\n" \
+               "> ⭐ Violence (Focus, Slash, Death) \n" \
+               "\n***Zadnor:*** \n" \
+               "**ZONE ONE** reflect during **wind** \n" \
+               "> 🐹 Ferocity or Rage (Stoneskin II, Burst, Rampage) \n" \
+               "> ⭐⛈️ History (Lodestone)\n" \
+               "**ZONE TWO** reflect during **rain** \n" \
+               "> 🐹 Moonlight (Light Curtain) \n" \
+               "> 💀 Care (Reraiser, Potion Kit, Ether Kit) \n" \
+               "> ⭐⛈️ Artistry (Chainspell, Assassinate) \n" \
+               "**ZONE THREE** \n" \
+               "> 🐹 Desperation (Protect II, Shell II) \n" \
+               "> ⛈️ Support (Reflect, Stoneskin, Bravery) \n" \
+               "> ⭐ Inspiration (Impetus) \n" \
+               "> Rank IV/V Compassion (Cure 2, Cure 4, Arise, Medikit)"
+    await ctx.send(fragList)
+
+@bot.command(name='logograms', help='Lists where to get logograms.')
+async def logograms(ctx):
+    logogramList = "Reminder that you can buy things on the marketboard, too. \n" \
+                   "**Conceptual Logograms** -- Aetherweaver, Martialist, Platebearer, Backstep, Cure, Incense, Paralyze \n" \
+                   "> Sprite Island during showers/thunderstorms\n" \
+                   "**Fundamental Logograms** -- Esuna, Raise, Feint, Tranquilizer, Protect\n" \
+                   "> Sprite Island during gloom/snow\n" \
+                   "**Offensive Logograms** -- Skirmisher, Bloodbath \n" \
+                   "> Hydatos Adapted lv 64 Snowstorm Sprites \n> bunnies\n" \
+                   "**Protective Logograms** -- Guardian, Spirit of the Remembered\n" \
+                   "> bunnies\n" \
+                   "**Curative Logograms** -- Ordained, Cure L II \n" \
+                   "> bunnies\n" \
+                   "**Tactical Logograms** -- Featherfoot, Stealth \n" \
+                   "> moist boxes\n" \
+                   "**Inimical Logograms** -- Spirit Dart, Dispel\n" \
+                   "> Pyros Adapted Snowstorm/Thunderstorm/Typhoon Sprites\n> bunnies\n" \
+                   "**Mitigative Logograms** -- Shell, Stoneskin\n" \
+                   "> Pyros Adapted Lv 46 Thunderstorm Sprites (sync down in Aetolus's FATE circle)\n" \
+                   "**Obscure Logograms** -- Magic Burst, Eagle Eye Shot, Double Edge, Breathtaker \n" \
+                   "> Baldesion Arsenal\n> Crystal Claws"
+    await ctx.send(logogramList)
 
