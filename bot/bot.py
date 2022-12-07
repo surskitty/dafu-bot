@@ -115,7 +115,7 @@ async def fish(ctx):
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=fish))
     time.sleep(2)
 
-@bot.command(name='bozjafrags', help='Lists what fragments drop where.')
+@bot.command(name='fragments', help='Lists what fragments drop where.')
 async def bozja_frags(ctx):
     fragList = "⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops! \n \n" \
                "***Bozja Southern Front:*** \n" \
