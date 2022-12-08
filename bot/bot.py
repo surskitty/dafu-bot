@@ -147,6 +147,38 @@ class Eureka(commands.Cog):
                        "**Obscure Logograms** -- Magic Burst, Eagle Eye Shot, Double Edge, Breathtaker \n" \
                        "> Baldesion Arsenal\n> Crystal Claws"
         await ctx.send(logogramList)
+    
+    @commands.command(name='wisdoms', help="Lists standard wisdoms and ingredients.")
+    async def wisdoms(self, ctx):
+        wisdomList = "***Healers:*** \nPlatebearer ;)\n" \
+                     "Templar -- Skirmisher + Cure II _or_ Skirmisher + Stoneskin _or_ Platebearer + Stoneskin + Cure\n" \
+                     "***Tanks:*** \nGuardian -- Protect + Platebearer\n" \
+                     "Indomitable -- Double Edge + Platebearer + Incense\n" \
+                     "***Casters:*** \nElder -- Aetherweaver + Ordained + Magic Burst\n" \
+                     "***Melee:*** \nDuelist -- Double Edge + Backstep + Bloodbath _or_ Double Edge + Skirmisher + Skirmisher\n" \
+                     "***Ranged:*** \nFiendhunter -- Feint + Tranquilizer + Eagle Eye Shot\n" \
+                     "Irregular -- Martialist + Skirmisher + Incense\n"
+        await ctx.send(wisdomList)
+
+    @commands.command(name='actions', help="Lists standard BA actions and ingredients.")
+    async def ba_actions(self, ctx):
+        actionList = "***General***\n" \
+                     "Death -- Raise + Dispel\n" \
+                     "Focus -- Skirm + Bloodbath\n" \
+                     "Reflect -- Ordained + Protect + Shell\n" \
+                     "Shell -- Protect + Esuna\n" \
+                     "***DPS:*** \n" \
+                     "Perception -- Breathtaker x2\n" \
+                     "Rapid Recast -- Dispel + Esuna\n" \
+                     "***Healers:*** \n" \
+                     "Bravery -- Skirmisher + Guardian + Ordained\n" \
+                     "Refresh -- Aetherweaver + Ordained + Cure II\n" \
+                     "Sacrifice -- Magic Burst + Raise + Esuna\n" \
+                     "***Tanks:*** \n" \
+                     "Catastrophe -- Spirit Dart x3 _or_ Bloodbath + Bloodbath\n" \
+                     "Cure III -- Cure II x2 _or_ Ordained + Cure + Cure _or_ Ordained + Bloodbath\n"
+        await ctx.send(actionList)
+
 
 @bot.command(name='forecast', help='Brief forecast for adventuring forays.')
 async def forecast(ctx):
