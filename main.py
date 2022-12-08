@@ -1,9 +1,14 @@
 import bot.bot as bot
-from dotenv import load_dotenv
-import os
+
+try:
+    from configparser import ConfigParser
+except ImportError:
+    from ConfigParser import ConfigParser
+configpath = "config.cfg"
 
 if __name__ == '__main__':
-    load_dotenv()
-    TOKEN = os.getenv('DISCORD_TOKEN')
+    config = ConfigParser()
+    config.read(configpath)
+    TOKEN = config.get('Kugane Fisher', 'discord_token')
     bot.run(TOKEN)
 

@@ -1,2 +1,5 @@
 .env
 env/
+tmp.py
+set_config.py
+config.cfg
