@@ -173,11 +173,17 @@ async def fish(ctx):
     fish = random.choice(fishies)
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=fish))
     options = [
-        f"Do raiders fish between raids, or fishers raid between fish windows?",
+        f"Do raiders fish between raids, or fishers raid between fish?",
         f"I'd never Chum cancel you, {ctx.message.author.mention}.",
         f"I was feeling pretty Irregular, but now I'm a Blue Corpse.",
         f"Aetherial Stabilizers are pretty Problematicus.",
-        f"Mud Golem?  No, I'm the Slime King."
+        f"Mud Golem?  No, I'm the Slime King.",
+        f"Cassie hates Master Casters; text it.",
+        f"It's _always_ time for crab.",
+        f"If it's Dawon to bring my gathering gear to Bozja, I don't wanna be right.",
+        f"They call me the Unforgiven because I still haven't dropped a Blitzring.",
+        f"You do Castrum with 48; I do it with 4; we are not the same.",
+        f"Notoriety does not apply to Cinder Surprise."
     ]
     response = random.choice(options)
     await ctx.send(response)
