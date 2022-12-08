@@ -169,7 +169,10 @@ async def forecast(ctx):
 
 @bot.command(name='fish', help='Updates status with a random fish.')
 async def fish(ctx):
-    fishies = ("for Mora Tecta", "for Green Prismfish", "for Sculptors", "for Egg Salad", "for the Unconditional", "Charibenet escape", "to Triple Hook Dafu")
+    fishies = ("the Ambitious Angler", "of Dragons Deep", "Odin before Namitaro", 
+               "Charibenet escape", "the Pie for Paikiller", "a total lack of Sea Butterfly",
+               "for Green Prismfish", "for Sculptors", "yet Unconditional", "the Ruby Dragon", 
+               "Egg prep", "scramble some Egg Salad", "for Mora Tecta", "to Triple Hook Dafu")
     fish = random.choice(fishies)
     await bot.change_presence(activity=discord.Activity(type=discord.ActivityType.watching, name=fish))
     options = [
@@ -183,7 +186,8 @@ async def fish(ctx):
         f"If it's Dawon to bring my gathering gear to Bozja, I don't wanna be right.",
         f"They call me the Unforgiven because I still haven't dropped a Blitzring.",
         f"You do Castrum with 48; I do it with 4; we are not the same.",
-        f"Notoriety does not apply to Cinder Surprise."
+        f"Notoriety does not apply to Cinder Surprise.",
+        f"Stop Lyon; field notes aren't real."
     ]
     response = random.choice(options)
     await ctx.send(response)
