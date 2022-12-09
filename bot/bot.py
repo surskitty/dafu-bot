@@ -75,7 +75,7 @@ class Bozja(commands.Cog):
     async def frags(self, ctx):
 
         bsf_embed = discord.Embed(title="Bozjan Southern Front fragments", 
-                    description="⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops!",
+                    description="⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks",
                     color=discord.Color.dark_gold())
         bsf_embed.add_field(name="**ZONE ONE** reflect during **thunder**", 
                   value="🐹 Skill (basic essences) \n" \
@@ -89,10 +89,9 @@ class Bozja(commands.Cog):
                   value="🐹 Compassion (Cure 2, Cure 4, Arise, Medikit) \n" \
                         "⛈️💀 Support (Reflect, Stoneskin, Bravery)\n" \
                         "⭐ Violence (Focus, Slash, Death)", inline=False)
-        bsf_embed.set_footer(text=f"Take your clothes off while Reflecting.")
 
         zad_embed = discord.Embed(title="Zadnor fragments", 
-                    description="⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops!",
+                    description="⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks",
                     color=discord.Color.dark_gold())
         zad_embed.add_field(name="**ZONE ONE** reflect during **wind**", 
                   value="🐹 Ferocity or Rage (Stoneskin II, Burst, Rampage) \n" \
@@ -106,7 +105,6 @@ class Bozja(commands.Cog):
                         "⛈️ Support (Reflect, Stoneskin, Bravery) \n" \
                         "⭐ Inspiration (Impetus) \n" \
                         "Rank IV/V Compassion (Cure 2, Cure 4, Arise, Medikit)", inline=False)
-        zad_embed.set_footer(text=f"You can't ilvl sync pants without pants.")
 
         await ctx.send(embed=bsf_embed)
         await ctx.send(embed=zad_embed)
@@ -172,23 +170,28 @@ class Eureka(commands.Cog):
 
     @commands.command(name='actions', help="Lists standard BA actions and ingredients.")
     async def ba_actions(self, ctx):
-        actionList = "***General***\n" \
-                     "Spirit of the Remembered -- Aetherweaver + Martialist + Platebearer\n" \
-                     "Death -- Raise + Dispel\n" \
-                     "Focus -- Skirm + Bloodbath\n" \
-                     "Reflect -- Ordained + Protect + Shell\n" \
-                     "Shell -- Protect + Esuna\n" \
-                     "***DPS:*** \n" \
-                     "Perception -- Breathtaker x2\n" \
-                     "Rapid Recast -- Dispel + Esuna\n" \
-                     "***Healers:*** \n" \
-                     "Bravery -- Skirmisher + Guardian + Ordained\n" \
-                     "Refresh -- Aetherweaver + Ordained + Cure II\n" \
-                     "Sacrifice -- Magic Burst + Raise + Esuna\n" \
-                     "***Tanks:*** \n" \
-                     "Catastrophe -- Spirit Dart x3 _or_ Bloodbath + Bloodbath\n" \
-                     "Cure III -- Cure II x2 _or_ Ordained + Cure + Cure _or_ Ordained + Bloodbath\n"
-        await ctx.send(actionList)
+        embed = discord.Embed(title="Action Crafting", 
+                description="Remember the more mnemes, the more broken trays.",
+                color=discord.Color.dark_gold())
+        embed.add_field(name="***General***", 
+              value="Spirit of the Remembered -- Aetherweaver + Martialist + Platebearer\n" \
+                    "Death -- Raise + Dispel\n" \
+                    "Focus -- Skirm + Bloodbath\n" \
+                    "Reflect -- Ordained + Protect + Shell\n" \
+                    "Shell -- Protect + Esuna", inline=False)
+        embed.add_field(name="***DPS***", 
+              value="Perception -- Breathtaker x2\n" \
+                    "Rapid Recast -- Dispel + Esuna", inline=False)
+        embed.add_field(name="***Healers***", 
+              value="Bravery -- Skirmisher + Guardian + Ordained\n" \
+                    "Refresh -- Aetherweaver + Ordained + Cure II\n" \
+                    "Sacrifice -- Magic Burst + Raise + Esuna", inline=False)
+        embed.add_field(name="***Tanks***", 
+              value="Catastrophe -- Spirit Dart x3 _or_ Bloodbath + Bloodbath\n" \
+                    "Cure III -- Cure II x2 _or_ Ordained + Cure + Cure _or_ Ordained + Bloodbath", inline=False)
+        embed.set_footer(text=f"Keeping Spirit of the Remembered up is good both in BA and solo!")
+
+        await ctx.send(embed=embed)
 
 
 @bot.command(name='forecast', help='Brief forecast for adventuring forays.')
