@@ -23,6 +23,7 @@ async def on_ready():
     print(f'{bot.user.name} has connected to Discord!')
     await bot.add_cog(Bozja(bot))
     await bot.add_cog(Eureka(bot))
+    await bot.add_cog(Forays(bot))
 
 @bot.command(name='hello', help='Answers with an appropriate hello message', hidden=True)
 async def hello(ctx):
@@ -49,6 +50,7 @@ weathers["Bozjan Southern Front"] = {"Dust Storms", "Wind", "Thunder"}
 weathers["Zadnor"] = {"Rain", "Wind"}
 
 class Bozja(commands.Cog):
+    """Commands specific for Bozja/Save the Queen areas."""
     def __init__(self, bot):
         self.bot = bot
 
@@ -105,11 +107,15 @@ class Bozja(commands.Cog):
                         "⛈️ Support (Reflect, Stoneskin, Bravery) \n" \
                         "⭐ Inspiration (Impetus) \n" \
                         "Rank IV/V Compassion (Cure 2, Cure 4, Arise, Medikit)", inline=False)
-
-        await ctx.send(embed=bsf_embed)
-        await ctx.send(embed=zad_embed)
+        
+        embeds = []
+        embeds.append(bsf_embed)
+        embeds.append(zad_embed)
+        
+        await ctx.send(content="Try `~reflect` or `~bozjaforecast` for help reflecting sprites.", embeds=embeds)
 
 class Eureka(commands.Cog):
+    """Commands specific to Eureka and the Baldesion Arsenal."""
     def __init__(self, bot):
         self.bot = bot
     
@@ -194,24 +200,57 @@ class Eureka(commands.Cog):
         await ctx.send(embed=embed)
 
 
-@bot.command(name='forecast', help='Brief forecast for adventuring forays.')
-async def forecast(ctx):
-    zones = ("Eureka Pagos", "Eureka Pyros", "Bozjan Southern Front", "Zadnor")
-    numWeather = 5
-
-    goalWeathers = []
-    for zone in zones:
-       forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
-       for weather, start_time in forecast:
-          fmt2 = time.mktime(start_time.timetuple()) + start_time.microsecond/1e6
-          if weather["name_en"] in weathers[zone]:
-             goalWeathers.append(Weather(zone, weather["name_en"], fmt2))
+class Forays(commands.Cog):
+    """Commands for both types of Adventuring Foray."""
+    def __init__(self, bot):
+        self.bot = bot
     
-    goalWeathers = sorted(goalWeathers, key=operator.attrgetter("time"))
-    finalString = f""
-    for weather in goalWeathers:
-        finalString += f'{weather.zone} - {weather.name} - <t:{weather.time:.0f}:R> - \<t:{weather.time:.0f}:R\>\n'
-    await ctx.send(finalString)
+    @commands.command(name='forecast', help='Forecast overview for adventuring forays.')
+    async def forecast(self, ctx):
+        zones = ("Eureka Pagos", "Eureka Pyros", "Bozjan Southern Front", "Zadnor")
+        numWeather = 5
+    
+        goalWeathers = []
+        for zone in zones:
+           forecast = ffxivweather.forecaster.get_forecast(place_name=zone, count=numWeather)
+           for weather, start_time in forecast:
+              fmt2 = time.mktime(start_time.timetuple()) + start_time.microsecond/1e6
+              if weather["name_en"] in weathers[zone]:
+                 goalWeathers.append(Weather(zone, weather["name_en"], fmt2))
+        
+        goalWeathers = sorted(goalWeathers, key=operator.attrgetter("time"))
+        finalString = f""
+        for weather in goalWeathers:
+            finalString += f'{weather.zone} - {weather.name} - <t:{weather.time:.0f}:R> - \<t:{weather.time:.0f}:R\>\n'
+        await ctx.send(finalString)
+
+    @commands.command(name='reflect', help='Explains how to reflect farm')
+    async def reflect(self, ctx):
+        embed = discord.Embed(title="Reflect farming in a nutshell", 
+                description="How to kill sprites and influence people.",
+                color=discord.Color.dark_gold())
+        embed.add_field(name="**General**", inline=False,
+              value="Reflect L and Lost Reflect prevent you from taking certain damage and send it back to the caster." \
+                    "  Incidentally, everything a Sprite does can be reflected.  When reflect farming, " \
+                    "first, find a group of sprites. Stand a comfortable distance away from them. " \
+                    "They aggro on casting and will probably gank you otherwise. \n" \
+                    "Remove all your gear, cast Reflect on yourself, then move slightly closer and start pulling. " \
+                    "Recasting Reflect can pull them pretty well by itself. \n" \
+                    "Recast Reflect every time the buff hits 3 seconds. Earlier is better. \n" \
+                    "Done right, they will take mega damage and you will take zero.")
+        embed.add_field(name="**Eureka**", inline=False,
+              value="Reflect is made through Protect, Shell, and Wisdom of the Ordained. " \
+                    "You can powerlevel like this by the Carbonatite Quarry in Pyros.")
+        embed.add_field(name="**Bozja**", inline=False,
+              value="Lost Reflect comes from Forgotten Fragments of Support. \n" \
+                    "Spirit of the Guardian triples the buff duration, but it increases your defense " \
+                    "so each reflected auto attack does less damage. Pick your poison.")
+
+        embed.set_footer(text=f"Sprites aggro on cast, which includes Raise. Watch your step.")
+
+        await ctx.send(embed=embed)
+
+
 
 @bot.command(name='fish', help='Updates status with a random fish.')
 async def fish(ctx):
