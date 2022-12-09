@@ -46,7 +46,7 @@ weathers["Eureka Anemos"] = {"Gales"}
 weathers["Eureka Pagos"] = {"Fog", "Blizzards"}
 weathers["Eureka Pyros"] = {"Blizzards", "Heat Waves"}
 weathers["Bozjan Southern Front"] = {"Dust Storms", "Wind", "Thunder"}
-weathers["Zadnor"] = {"Rain"}
+weathers["Zadnor"] = {"Rain", "Wind"}
 
 class Bozja(commands.Cog):
     def __init__(self, bot):
