@@ -73,34 +73,43 @@ class Bozja(commands.Cog):
     
     @commands.command(name='fragments', help='Lists what fragments drop where.')
     async def frags(self, ctx):
-        fragList = "⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops! \n \n" \
-                   "***Bozja Southern Front:*** \n" \
-                   "**ZONE ONE** reflect during **thunder** \n" \
-                   "> 🐹 Skill (basic essences) \n" \
-                   "> ⛈️💀 Preparation (Phoenix, Potion) \n" \
-                   "> ⭐ Caution (Manawall, Cure 3, Incense, etc) \n" \
-                   "**ZONE TWO** reflect during **dust** or **wind** \n" \
-                   "> 🐹 Awakening (Profane, Irregular, basic essences) \n" \
-                   "> ⛈️💀 Care (Reraiser, Potion Kit, Ether Kit) \n" \
-                   "> ⭐ Ingenuity (Spellforge, Steelsting, Dispel, etc) \n" \
-                   "**ZONE THREE** reflect during **wind** or **dust** \n" \
-                   "> 🐹 Compassion (Cure 2, Cure 4, Arise, Medikit) \n" \
-                   "> ⛈️💀 Support (Reflect, Stoneskin, Bravery)\n" \
-                   "> ⭐ Violence (Focus, Slash, Death) \n" \
-                   "\n***Zadnor:*** \n" \
-                   "**ZONE ONE** reflect during **wind** \n" \
-                   "> 🐹 Ferocity or Rage (Stoneskin II, Burst, Rampage) \n" \
-                   "> ⭐⛈️ History (Lodestone)\n" \
-                   "**ZONE TWO** reflect during **rain** \n" \
-                   "> 🐹 Moonlight (Light Curtain) \n" \
-                   "> 💀 Care (Reraiser, Potion Kit, Ether Kit) \n" \
-                   "> ⭐⛈️ Artistry (Chainspell, Assassinate) \n" \
-                   "**ZONE THREE** \n" \
-                   "> 🐹 Desperation (Protect II, Shell II) \n" \
-                   "> ⛈️ Support (Reflect, Stoneskin, Bravery) \n" \
-                   "> ⭐ Inspiration (Impetus) \n" \
-                   "> Rank IV/V Compassion (Cure 2, Cure 4, Arise, Medikit)"
-        await ctx.send(fragList)
+
+        bsf_embed = discord.Embed(title="Bozjan Southern Front fragments", 
+                    description="⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops!",
+                    color=discord.Color.dark_gold())
+        bsf_embed.add_field(name="**ZONE ONE** reflect during **thunder**", 
+                  value="🐹 Skill (basic essences) \n" \
+                        "⛈️💀 Preparation (Phoenix, Potion) \n" \
+                        "⭐ Caution (Manawall, Cure 3, Incense, etc)", inline=False)
+        bsf_embed.add_field(name="**ZONE TWO** reflect during **dust** or **wind**", 
+                  value="🐹 Awakening (Profane, Irregular, basic essences) \n" \
+                        "⛈️💀 Care (Reraiser, Potion Kit, Ether Kit) \n" \
+                        "⭐ Ingenuity (Spellforge, Steelsting, Dispel, etc)", inline=False)
+        bsf_embed.add_field(name="**ZONE THREE** reflect during **wind** or **dust**", 
+                  value="🐹 Compassion (Cure 2, Cure 4, Arise, Medikit) \n" \
+                        "⛈️💀 Support (Reflect, Stoneskin, Bravery)\n" \
+                        "⭐ Violence (Focus, Slash, Death)", inline=False)
+        bsf_embed.set_footer(text=f"Take your clothes off while Reflecting.")
+
+        zad_embed = discord.Embed(title="Zadnor fragments", 
+                    description="⛈️ sprites (weather); 🐹 wildlife; 💀 undead (night only); ⭐ star ranks. Higher ranks have better drops!",
+                    color=discord.Color.dark_gold())
+        zad_embed.add_field(name="**ZONE ONE** reflect during **wind**", 
+                  value="🐹 Ferocity or Rage (Stoneskin II, Burst, Rampage) \n" \
+                        "⭐⛈️ History (Lodestone)", inline=False)
+        zad_embed.add_field(name="**ZONE TWO** reflect during **rain**", 
+                  value="🐹 Moonlight (Light Curtain) \n" \
+                        "💀 Care (Reraiser, Potion Kit, Ether Kit) \n" \
+                        "⭐⛈️ Artistry (Chainspell, Assassinate)", inline=False)
+        zad_embed.add_field(name="**ZONE THREE** skip reflecting", 
+                  value="🐹 Desperation (Protect II, Shell II) \n" \
+                        "⛈️ Support (Reflect, Stoneskin, Bravery) \n" \
+                        "⭐ Inspiration (Impetus) \n" \
+                        "Rank IV/V Compassion (Cure 2, Cure 4, Arise, Medikit)", inline=False)
+        zad_embed.set_footer(text=f"You can't ilvl sync pants without pants.")
+
+        await ctx.send(embed=bsf_embed)
+        await ctx.send(embed=zad_embed)
 
 class Eureka(commands.Cog):
     def __init__(self, bot):
@@ -127,6 +136,7 @@ class Eureka(commands.Cog):
     
     @commands.command(name='logograms', help='Lists where to get logograms.')
     async def logograms(self, ctx):
+        
         logogramList = "Reminder that you can buy things on the marketboard, too. \n" \
                        "**Conceptual Logograms** -- Aetherweaver, Martialist, Platebearer, Backstep, Cure, Incense, Paralyze \n" \
                        "> Sprite Island during showers/thunderstorms\n" \
@@ -163,6 +173,7 @@ class Eureka(commands.Cog):
     @commands.command(name='actions', help="Lists standard BA actions and ingredients.")
     async def ba_actions(self, ctx):
         actionList = "***General***\n" \
+                     "Spirit of the Remembered -- Aetherweaver + Martialist + Platebearer\n" \
                      "Death -- Raise + Dispel\n" \
                      "Focus -- Skirm + Bloodbath\n" \
                      "Reflect -- Ordained + Protect + Shell\n" \
